@@ -4,7 +4,7 @@ Smart attributes are form elements used in OOD interactive app forms. After load
 Ruby code in `form.yml.erb` is executed every time the app template is rendered, which due to a bug in OOD happens several times per dashboard page load. The code in the smart attributes only runs when the actual interactive app form is loaded. This allows for much more complex scripts without the performance impact. The smart attributes must be loaded before use.  
   
 Example `form.yml.erb` that uses some smart attributes:
-```
+```yml
 # form.yml.erb
 <% require "/appl/opt/ood_util/attributes/csc_slurm_partition" -%>
 <% require "/appl/opt/ood_util/attributes/csc_slurm_project" -%>
@@ -22,7 +22,7 @@ The above form allows the user to select project and partitions from a list that
 ### csc_slurm_partition/project
 Use these to get the available projects and partitions that the user can submit a job for. These are automatically submitted to Slurm.  
 A partition that can't be changed by the user but submitted is to Slurm can be defined as
-```
+```yml
 # form.yml.erb
 <% require "/appl/opt/ood_util/attributes/csc_slurm_partition" -%>
 attributes:
@@ -36,7 +36,7 @@ form:
 ### csc_cores/memory/nvme/time/gpu
 Various elements for letting the user select CPUs, memory, NVME size, time and GPUs for the job. These values are not automatically submitted to Slurm so `submit.yml.erb` must be modified.  
 Example:
-```
+```yml
 # submit.yml.erb
 batch_connect:
   template: "basic"
@@ -57,7 +57,7 @@ A hidden input element that contains the limits for CPUs, memory, NVME, time and
 
 ### csc_extra_desc
 A form element for writing a longer description using Markdown and HTML for the interactive app and form.  
-```
+```yml
 # form.yml.erb
 <% require "/appl/opt/ood_util/attributes/csc_extra_desc" -%>
 attributes:
@@ -77,7 +77,7 @@ The errors that Slurm gives when an user tries to submit a job with for example 
 `csc_slurm_project`, `csc_slurm_partition`, `csc_slurm_limits` must be `require`d and included in the form section of `form.yml.erb`.
 
 Basic usage:
-```
+```yml
 # form.yml.erb
 <% require "/appl/opt/ood_util/attributes/csc_slurm_project" -%>
 <% require "/appl/opt/ood_util/attributes/csc_slurm_partition" -%>
@@ -103,7 +103,7 @@ form:
 The above form will create a form containing inputs for project, partition, time, CPUs, memory, NVME, GPUs that are automatically validated using limits from Slurm.  
 
 Advanced usage:
-```
+```yml
 # form.yml.erb
 <% require "/appl/opt/ood_util/attributes/csc_slurm_project" -%>
 <% require "/appl/opt/ood_util/attributes/csc_slurm_partition" -%>
