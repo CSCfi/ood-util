@@ -13,10 +13,14 @@ module SmartAttributes
     class CSCSlurmLimits < Attribute
 
       def initialize(id, opts={})
-        begin 
-          limits = SlurmLimits::limits
-          assoc_limits = SlurmLimits::assoc_limits
-          submits = SlurmLimits::submits
+        begin
+          unless opts[:nofetchlimits]
+            limits = SlurmLimits::limits
+          end
+          unless opts[:nosubmitscount]
+            assoc_limits = SlurmLimits::assoc_limits
+            submits = SlurmLimits::submits
+          end
         rescue
         end
         # Allow devs to override the limits from slurm
