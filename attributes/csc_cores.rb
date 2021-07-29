@@ -29,7 +29,7 @@ module SmartAttributes
       # @param fmt [String, nil] formatting of form label
       # @return [String] form label
       def label(fmt: nil)
-        (opts[:label] || "Numbre of CPUs").to_s
+        (opts[:label] || "Number of CPUs").to_s
       end
 
       # Submission hash describing how to submit this attribute
