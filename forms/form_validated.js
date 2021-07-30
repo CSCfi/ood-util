@@ -18,14 +18,16 @@ $(document).ready(function () {
   slurm_assoc_limits = limits_input.data("assoc-limits");
   slurm_submits = limits_input.data("submits");
   partition_override = limits_input.data("partition");
-
   setup_form();
 
   save_original_limits();
 
   // Register event handlers
   register_event_handlers();
-  update_min_max();
+  update_min_max(false);
+  // Validating immediately makes the message disappear when the page is fully loaded
+  // Validate after a short delay
+  setTimeout(validate_form, 500);
 });
 
 // Disable launch button disabling and validation of form
@@ -59,7 +61,6 @@ function register_event_handlers() {
 }
 
 function part_proj_change() {
-  check_submits();
   update_min_max();
 }
 
@@ -117,10 +118,12 @@ function submit_form() {
   form[0].submit();
 }
 
-function update_min_max() {
+function update_min_max(validate = true) {
   const inputs = get_inputs();
   inputs.each((i, inp) => update_input($(inp)));
-  validate_form();
+  if (validate) {
+    validate_form();
+  }
 }
 
 // Update the min and max attributes of an input elements
@@ -128,19 +131,19 @@ function update_input(el) {
   // Use data-min and data-max to determine which slurm limit value to use
   const min = el.data("min");
   const max = el.data("max");
-  if (min !== undefined) {
+  if (min != null) {
     const limit = get_current_limits()[min];
-    const actual_limit = limit == undefined ? el.data("orig-min") : limit;
-    if (limit == undefined) {
+    const actual_limit = limit == null ? el.data("orig-min") : limit;
+    if (limit == null) {
       el.removeAttr("min");
     } else {
       el.attr("min", actual_limit);
     }
   }
-  if (max !== undefined) {
+  if (max != null) {
     const limit = get_current_limits()[max];
-    const actual_limit = limit == undefined ? el.data("orig-max") : limit;
-    if (limit == undefined) {
+    const actual_limit = limit == null ? el.data("orig-max") : limit;
+    if (limit == null) {
       el.removeAttr("max");
     } else {
       el.attr("max", actual_limit);
@@ -148,37 +151,55 @@ function update_input(el) {
   }
 }
 
+// Set the custom validity on a jQuery element, returns false if element didn't exist
+function setValidity(jqEl, msg) {
+  if (jqEl[0] == null) {
+    return false;
+  }
+  jqEl[0].setCustomValidity(msg);
+  return true;
+}
+
 // Check amount of submits by project and partition in the queue
 function check_submits() {
-  if (slurm_submits === undefined || slurm_assoc_limits === undefined) {
+  if (slurm_submits == null || slurm_assoc_limits == null) {
     return;
   }
   const part_input = get_partition_input();
   const proj_input = get_project_input();
-  const partition = part_input.val();
+  const partition = part_input.val() || partition_override;
   const project = proj_input.val();
   const proj_part = `${project}_${partition}`;
   const submits = slurm_submits[proj_part] || 0;
   const assoc_limits = slurm_assoc_limits[proj_part];
-  if (assoc_limits === undefined || assoc_limits["maxsubmit"] === undefined)
+  if (assoc_limits == null || assoc_limits["maxsubmit"] == null)
     return;
   const maxsubmit = assoc_limits["maxsubmit"];
+
+  setValidity(proj_input, "");
+  setValidity(part_input, "");
   if (maxsubmit === 0) {
-    proj_input[0].setCustomValidity("Project has no BU left");
-    part_input[0].setCustomValidity("");
+    setValidity(proj_input, "Project has no BU left");
   } else if (submits >= maxsubmit) {
-    part_input[0].setCustomValidity(`${project} already has ${submits} job${submits > 1 ? "s" : ""} out of maximum ${maxsubmit} in the ${partition} queue`);
-    proj_input[0].setCustomValidity("");
-  } else {
-    proj_input[0].setCustomValidity("");
-    part_input[0].setCustomValidity("");
+    const msg = `${project} already has ${submits} job${submits > 1 ? "s" : ""} out of maximum ${maxsubmit} in the ${partition} queue`;
+    // Attach message to project dropdown if partition dropdown is missing
+    if (!setValidity(part_input, msg)) {
+      setValidity(proj_input, msg);
+    }
+  } 
+
+  if (proj_input[0] != null) {
+    proj_input[0].reportValidity();
   }
-  proj_input[0].reportValidity();
-  part_input[0].reportValidity();
+  if (part_input[0] != null) {
+    part_input[0].reportValidity();
+  }
+  return false;
 }
 
 // Check validity of all inputs in the form
 function validate_form() {
+  check_submits();
   const elements = get_inputs();
   elements.each((i, el) => {
     validate_input($(el));
@@ -206,15 +227,16 @@ function validate_input(el) {
   const n_max = parse_function(max);
   const n_val = parse_function(val);
 
-  if (min != undefined && n_val < n_min) {
-    el[0].setCustomValidity(`Value is less than the minimum for partition (${min})`);
-  } else if (max != undefined && n_val > n_max) {
-    el[0].setCustomValidity(`Value exceeds the maximum for partition (${max})`);
+  if (min != null && n_val < n_min) {
+    setValidity(el, `Value is less than the minimum for partition (${min})`);
+  } else if (max != null && n_val > n_max) {
+    setValidity(el, `Value exceeds the maximum for partition (${max})`);
   } else {
     // Input element value ok (pattern/format is checked automatically)
-    el[0].setCustomValidity("");
+    setValidity(el, "");
   }
   el[0].reportValidity();
+  return false;
 }
 
 // Return the time as seconds

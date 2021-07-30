@@ -122,11 +122,11 @@ attributes:
     max: 4 # Used if a limit for the partition isn't found by csc_slurm_limits
     label: Cores # Custom label for the field
   csc_slurm_limits:
-    # Uncomment the next line if you are using a fixed partition (see csc_slurm_partition usage)
-    # partition: "interactive"
 
     # Override the limits from csc_slurm_limits
     data:
+      # Uncomment the next line if you are using a fixed partition (see csc_slurm_partition usage)
+      # partition: "interactive"
       # nofetchlimits: true # Disables fetching the limits from Slurm (uncomment to define all limits ourselves)
       nosubmitscount: true # Disable checking amount of queued jobs
       limits:
