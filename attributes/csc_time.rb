@@ -10,7 +10,7 @@ module SmartAttributes
 
   module Attributes
     class CSCTime < Attribute
-      
+
       def initialize(id, opts = {})
         # Validate using time from csc_slurm_limits, parse the value as type time on validation
         opts[:data] = {:max => "time", :type => "time"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
@@ -31,11 +31,19 @@ module SmartAttributes
       def label(fmt: nil)
         (opts[:label] || "Time").to_s
       end
-      
+
       def help(fmt: nil)
         (opts[:help] || "d-hh:mm:ss, or hh:mm:ss").to_s
       end
-      
+
+      def value
+        if opts[:value].class.to_s.match(/UploadedFile/)
+          opts[:value]
+        else
+          (opts[:value] || "4:00:00").to_s
+        end
+      end
+
       # Submission hash describing how to submit this attribute
       # @param fmt [String, nil] formatting of hash
       # @return [Hash] submission hash

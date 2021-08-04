@@ -31,6 +31,14 @@ module SmartAttributes
         (opts[:label] || "Local disk (GB)").to_s
       end
 
+      def value
+        if opts[:value].class.to_s.match(/UploadedFile/)
+          opts[:value]
+        else
+          (opts[:value] || "0").to_s
+        end
+      end
+
       # Submission hash describing how to submit this attribute
       # @param fmt [String, nil] formatting of hash
       # @return [Hash] submission hash

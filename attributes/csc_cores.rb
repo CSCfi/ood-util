@@ -10,7 +10,7 @@ module SmartAttributes
 
   module Attributes
     class CSCCores< Attribute
-      
+
       # Extend the default initializer
       def initialize(id, opts = {})
         # Field will be validated using the cpu value from csc_slurm_limits
@@ -30,6 +30,14 @@ module SmartAttributes
       # @return [String] form label
       def label(fmt: nil)
         (opts[:label] || "Number of CPUs").to_s
+      end
+
+      def value
+        if opts[:value].class.to_s.match(/UploadedFile/)
+          opts[:value]
+        else
+          (opts[:value] || "1").to_s
+        end
       end
 
       # Submission hash describing how to submit this attribute
