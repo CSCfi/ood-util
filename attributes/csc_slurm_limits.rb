@@ -1,5 +1,5 @@
 begin
-  require '/appl/opt/ood_util/scripts/slurm_limits.rb'
+    require '#{__dir__}../scripts/slurm_limits.rb'
 rescue LoadError 
 end
 module SmartAttributes

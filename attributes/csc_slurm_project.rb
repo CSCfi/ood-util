@@ -17,7 +17,7 @@ module SmartAttributes
       end
 
       def get_projects
-        sacct_res = `/appl/opt/ood_util/scripts/p_and_p.sh`
+          sacct_res = `#{__dir__}/../scripts/p_and_p.sh`
         res_arr = sacct_res.split('@')
         slurm_projects = res_arr[1].split(' ')    
       end

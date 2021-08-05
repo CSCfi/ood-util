@@ -1,5 +1,6 @@
 #!/bin/bash
-SCRIPT_DIR="/appl/opt/ood_util/scripts"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 
 CACHE_TIME=600
 # per-user cache
