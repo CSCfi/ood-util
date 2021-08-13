@@ -1,5 +1,5 @@
 begin
-    require '#{__dir__}../scripts/slurm_limits.rb'
+    require_relative '../scripts/slurm_limits.rb'
 rescue LoadError 
 end
 module SmartAttributes
