@@ -29,7 +29,7 @@ module SmartAttributes
       # @param fmt [String, nil] formatting of form label
       # @return [String] form label
       def label(fmt: nil)
-        (opts[:label] || "GPU (V100)").to_s
+        (opts[:label] || "GPUs (V100)").to_s
       end
       
       def value
