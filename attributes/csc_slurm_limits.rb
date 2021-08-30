@@ -1,6 +1,6 @@
 begin
     require_relative '../scripts/slurm_limits'
-rescue LoadError 
+rescue LoadError
 end
 module SmartAttributes
   class AttributeFactory
@@ -13,18 +13,20 @@ module SmartAttributes
     class CSCSlurmLimits < Attribute
 
       def initialize(id, opts={})
+        error = ""
         begin
           unless opts[:nofetchlimits]
             limits = SlurmLimits.limits
           end
           unless opts[:nosubmitscount]
             assoc_limits = SlurmLimits.assoc_limits
-            submits = SlurmLimits.submits
+            submits = SlurmLimits.running
           end
-        rescue
+        rescue Exception => e
+          error = e
         end
         # Allow devs to override the limits from slurm
-        opts[:data] = {:limits => limits, :assoc_limits => assoc_limits, :submits => submits}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
+        opts[:data] = {:limits => limits, :assoc_limits => assoc_limits, :submits => submits, :error => error}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         super(id, opts)
       end
 

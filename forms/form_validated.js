@@ -14,13 +14,15 @@ const BC_PREFIX = "batch_connect_session_context";
 $(document).ready(function () {
   // Populate slurm_limits object with the limits
   const limits_input = $(`#${BC_PREFIX}_csc_slurm_limits`);
-  slurm_limits = limits_input.data("limits");
-  slurm_assoc_limits = limits_input.data("assoc-limits");
-  slurm_submits = limits_input.data("submits");
-  partition_override = limits_input.data("partition");
+  slurm_limits = limits_input.data("limits") || {};
+  slurm_assoc_limits = limits_input.data("assoc-limits") || {};
+  const submits = limits_input.data("submits") || [];
+  partition_override = limits_input.data("partition") || "";
   setup_form();
 
   save_original_limits();
+
+  slurm_submits = count_running_resources(submits);
 
   // Register event handlers
   register_event_handlers();
@@ -60,6 +62,48 @@ function register_event_handlers() {
   });
 }
 
+function count_running_resources(submits) {
+  const jobs = {
+    "partition": {
+
+    },
+    "project": {
+
+    },
+    "numjobs": {
+
+    }
+  };
+  if (submits == null) {
+    return jobs;
+  }
+  for (const job of submits) {
+    for (const [res, value] of Object.entries(job["tres"])) {
+      jobs["partition"][job["part"]] = jobs["partition"][job["part"]] || {};
+      jobs["project"][job["acc"]] = jobs["project"][job["acc"]] || {};
+
+      if (res in jobs["partition"][job["part"]]) {
+        jobs["partition"][job["part"]][res] += value;
+      } else {
+        jobs["partition"][job["part"]][res] = value;
+      }
+
+      if (res in jobs["project"][job["acc"]]) {
+        jobs["project"][job["acc"]][res] += value;
+      } else {
+        jobs["project"][job["acc"]][res] = value;
+      }
+    }
+    const key = `${job["acc"]}_${job["part"]}`;
+    if (key in jobs["numjobs"]) {
+      jobs["numjobs"][key] += 1;
+    } else {
+      jobs["numjobs"][key] = 1;
+    }
+  }
+  return jobs;
+}
+
 function part_proj_change() {
   update_min_max();
 }
@@ -97,6 +141,12 @@ function get_partition() {
   return part;
 }
 
+function get_project() {
+  const proj_input = get_project_input();
+  const proj = proj_input.val();
+  return proj;
+}
+
 // Ask user to submit if form has invalid data, otherwise just submit
 function handle_submit(ev) {
   ev.preventDefault()
@@ -131,24 +181,80 @@ function update_input(el) {
   // Use data-min and data-max to determine which slurm limit value to use
   const min = el.data("min");
   const max = el.data("max");
+
+  const limits = get_current_limits();
   if (min != null) {
-    const limit = get_current_limits()[min];
+    const [limit, used, type] = get_limit(limits, min);
     const actual_limit = limit == null ? el.data("orig-min") : limit;
     if (limit == null) {
       el.removeAttr("min");
+      el.removeData("used");
+      el.removeData("limit-type");
     } else {
       el.attr("min", actual_limit);
+      el.data("used", used);
+      el.data("limit-type", type);
     }
   }
   if (max != null) {
-    const limit = get_current_limits()[max];
+    const [limit, used, type] = get_limit(limits, max);
     const actual_limit = limit == null ? el.data("orig-max") : limit;
     if (limit == null) {
       el.removeAttr("max");
+      el.removeData("used");
+      el.removeData("limit-type");
     } else {
       el.attr("max", actual_limit);
+      el.data("used", used);
+      el.data("limit-type", type);
     }
   }
+}
+
+function get_limit(limits, name) {
+  let limit = limits[name];
+  let limit_type = "";
+  let used = 0;
+
+  if (limit == null) {
+    return [null, 0, ""];
+  }
+
+  const qos = limits["qos"] || {};
+  if (Object.keys(qos).length === 0) {
+    return [limit, 0, ""];
+  }
+
+  const maxtres = qos["maxtres"];
+  if (name in maxtres) {
+    if (maxtres[name] < limit) {
+      limit = maxtres[name];
+      limit_type = "job";
+    }
+  }
+
+  const maxtrespa = qos["maxtrespa"];
+  if (name in maxtrespa) {
+    const proj_jobs = slurm_submits["project"][get_project()] || {};
+    const proj_used = proj_jobs[name] || 0;
+    if (maxtrespa[name] - proj_used < limit) {
+      limit = maxtrespa[name] - proj_used;
+      used = proj_used;
+      limit_type = "project";
+    }
+  }
+
+  const maxtrespu = qos["maxtrespu"];
+  if (name in maxtrespu) {
+    const part_jobs = slurm_submits["partition"][get_partition()] || {};
+    const part_used = part_jobs[name] || 0;
+    if (maxtrespu[name] - part_used < limit) {
+      limit = maxtrespu[name] - part_used;
+      used = part_used;
+      limit_type = "user";
+    }
+  }
+  return [limit, used, limit_type];
 }
 
 // Set the custom validity on a jQuery element, returns false if element didn't exist
@@ -170,7 +276,7 @@ function check_submits() {
   const partition = part_input.val() || partition_override;
   const project = proj_input.val();
   const proj_part = `${project}_${partition}`;
-  const submits = slurm_submits[proj_part] || 0;
+  const submits = slurm_submits["numjobs"][proj_part] || 0;
   const assoc_limits = slurm_assoc_limits[proj_part];
   if (assoc_limits == null || assoc_limits["maxsubmit"] == null)
     return;
@@ -230,7 +336,10 @@ function validate_input(el) {
   if (min != null && n_val < n_min) {
     setValidity(el, `Value is less than the minimum for partition (${min})`);
   } else if (max != null && n_val > n_max) {
-    setValidity(el, `Value exceeds the maximum for partition (${max})`);
+    const used = el.data("used") || 0;
+    const limit_type = el.data("limit-type");
+    const used_message = used > 0 ? `${used} used out of maximum ${n_max+used} per ${limit_type}` : `${max}`;
+    setValidity(el, `Value exceeds the maximum for partition (${used_message})`);
   } else {
     // Input element value ok (pattern/format is checked automatically)
     setValidity(el, "");
