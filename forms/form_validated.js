@@ -236,9 +236,10 @@ function get_limit(limits, name) {
   const maxtrespa = qos["maxtrespa"];
   if (name in maxtrespa) {
     const proj_jobs = slurm_submits["project"][get_project()] || {};
-    const proj_used = proj_jobs[name] || 0;
+    // Uncomment to enable limiting total resources
+    const proj_used = 0; //proj_jobs[name] || 0;
     if (maxtrespa[name] - proj_used < limit) {
-      limit = maxtrespa[name] - proj_used;
+      limit = maxtrespa[name]- proj_used;
       used = proj_used;
       limit_type = "project";
     }
@@ -247,14 +248,15 @@ function get_limit(limits, name) {
   const maxtrespu = qos["maxtrespu"];
   if (name in maxtrespu) {
     const part_jobs = slurm_submits["partition"][get_partition()] || {};
-    const part_used = part_jobs[name] || 0;
+    
+    const part_used = 0; // part_jobs[name] || 0;
     if (maxtrespu[name] - part_used < limit) {
       limit = maxtrespu[name] - part_used;
       used = part_used;
       limit_type = "user";
     }
   }
-  return [limit, used, limit_type];
+  return [limit, 0, limit_type];
 }
 
 // Set the custom validity on a jQuery element, returns false if element didn't exist
