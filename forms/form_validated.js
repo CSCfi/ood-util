@@ -410,7 +410,7 @@ $(document).ready(function () {
   const form = reset_cache_field.parent();
   const reset_button = document.createElement("button");
   reset_button.className = "btn btn-secondary btn-block";
-  reset_button.appendChild(document.createTextNode("Reset defaults"));
+  reset_button.appendChild(document.createTextNode("Reset to default settings"));
   form.append(reset_button);
   $(reset_button).click(function(e) {
     e.preventDefault();
