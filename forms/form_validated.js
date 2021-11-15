@@ -79,6 +79,9 @@ function count_running_resources(submits) {
   }
   for (const job of submits) {
     for (const [res, value] of Object.entries(job["tres"])) {
+      if (job["state"] !== "R") {
+        continue;
+      }
       jobs["partition"][job["part"]] = jobs["partition"][job["part"]] || {};
       jobs["project"][job["acc"]] = jobs["project"][job["acc"]] || {};
 
@@ -237,7 +240,7 @@ function get_limit(limits, name) {
   if (name in maxtrespa) {
     const proj_jobs = slurm_submits["project"][get_project()] || {};
     // Uncomment to enable limiting total resources
-    const proj_used = 0; //proj_jobs[name] || 0;
+    const proj_used = proj_jobs[name] || 0;
     if (maxtrespa[name] - proj_used < limit) {
       limit = maxtrespa[name]- proj_used;
       used = proj_used;
@@ -248,15 +251,14 @@ function get_limit(limits, name) {
   const maxtrespu = qos["maxtrespu"];
   if (name in maxtrespu) {
     const part_jobs = slurm_submits["partition"][get_partition()] || {};
-    
-    const part_used = 0; // part_jobs[name] || 0;
+    const part_used = part_jobs[name] || 0;
     if (maxtrespu[name] - part_used < limit) {
       limit = maxtrespu[name] - part_used;
       used = part_used;
       limit_type = "user";
     }
   }
-  return [limit, 0, limit_type];
+  return [limit, used, limit_type];
 }
 
 // Set the custom validity on a jQuery element, returns false if element didn't exist
@@ -406,7 +408,6 @@ $(document).ready(function () {
   if (reset_cache_field.length == 0) {
     return;
   }
-  console.log(reset_cache_field.data("app"));
   const form = reset_cache_field.parent();
   const reset_button = document.createElement("button");
   reset_button.className = "btn btn-secondary btn-block";
