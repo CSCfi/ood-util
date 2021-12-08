@@ -49,7 +49,7 @@ class TestSlurmProjectPartition < Minitest::Test
     fmi = partitions["fmi"]
     assert_equal(
       [
-        {:"data-option-for-csc-slurm-project-oodinstallation" => false},
+        {:"data-option-for-csc-slurm-project-ood-installation" => false},
         {:"data-option-for-csc-slurm-project-project2002567" => false},
         {:"data-option-for-csc-slurm-project-project2001659" => false}
       ], fmi)

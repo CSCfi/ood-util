@@ -70,8 +70,13 @@ module SlurmProjectPartition
       parts.transform_values do |projects|
         # select the project that are not allowed for this partition
         (all_projects - projects).map do |project|
-          # Need to remove underscore from project name because of OOD (bug? feature?)
-          {"data-option-for-csc-slurm-project-#{project.gsub(/_/, '')}".to_sym => false}
+          # OOD has strange behaviour for the way these project names need to behave.
+          # Underscore needs to be replaced by dash if the following character is a letter,
+          # otherwise remove the underscore.
+          # ood_installation => ood-installation
+          # project_123456 => project123456
+          proj_name = project.gsub(/_([a-z])/, '-\1').gsub(/_/, '')
+          {"data-option-for-csc-slurm-project-#{proj_name}".to_sym => false}
         end
       end
     end
