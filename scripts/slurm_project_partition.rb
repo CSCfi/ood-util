@@ -59,11 +59,35 @@ module SlurmProjectPartition
       grouped.map { |part, p_and_p| [part, p_and_p.map { |p| p[0] }] }.to_h
     end
 
+    # Returns a hash with the partitions as key and array of projects that are not available for the partition
+    # The format is as expected by OOD in the forms when using OOD_BC_DYNAMIC_JS
+    # e.g. hides non-fmi partition when fmi project is selected
+    # example: {"fmi": [{:"data-option-for-csc-slurm-project-project1234" => false}, {:"data-option-for-csc-slurm-project-project1234" => false}], ...}
+    def get_partitions_with_data(slurm_output)
+      parts = get_partitions(slurm_output)
+      all_projects = get_projects(slurm_output)
+
+      parts.transform_values do |projects|
+        # select the project that are not allowed for this partition
+        (all_projects - projects).map do |project|
+          # Need to remove underscore from project name because of OOD (bug? feature?)
+          {"data-option-for-csc-slurm-project-#{project.gsub(/_/, '')}".to_sym => false}
+        end
+      end
+    end
+
     # Cached version of get_partitions
     def partitions
       @partitions ||=
         begin
           get_partitions(query_slurm)
+        end
+    end
+
+    def partitions_with_data
+      @partitions_with_data ||=
+        begin
+          get_partitions_with_data(query_slurm)
         end
     end
   end

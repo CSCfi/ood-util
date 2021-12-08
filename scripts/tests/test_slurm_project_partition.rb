@@ -38,6 +38,23 @@ class TestSlurmProjectPartition < Minitest::Test
     assert_equal ["project_2002037"], fmi
   end
 
+  def test_partitions_with_data
+    partitions = SlurmProjectPartition.get_partitions_with_data(@slurm_output)
+
+    assert_equal 11, partitions.length
+
+    interactive = partitions["interactive"]
+    assert_equal([{:"data-option-for-csc-slurm-project-project2002037" => false}], interactive)
+
+    fmi = partitions["fmi"]
+    assert_equal(
+      [
+        {:"data-option-for-csc-slurm-project-oodinstallation" => false},
+        {:"data-option-for-csc-slurm-project-project2002567" => false},
+        {:"data-option-for-csc-slurm-project-project2001659" => false}
+      ], fmi)
+  end
+
   def setup
     @slurm_output = <<-EOF
 puhti|ood_installation|robinkar|interactive|1|||||||2|||2|||normal|||
