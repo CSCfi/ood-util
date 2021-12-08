@@ -1,3 +1,7 @@
+begin
+  require_relative '../scripts/slurm_project_partition'
+rescue LoadError
+end
 module SmartAttributes
   class AttributeFactory
     # Build this attribute object with defined options
@@ -10,6 +14,12 @@ module SmartAttributes
 
   module Attributes
     class CSCPartition < Attribute
+
+      def initialize(id, opts={})
+        @partitions = SlurmProjectPartition.partitions_with_data
+        super(id, opts)
+      end
+
       # Type of form widget used for this attribute
       # @return [String] widget type
       def widget
@@ -20,10 +30,10 @@ module SmartAttributes
       def filter_partitions(partitions)
         if !opts[:ignore].nil?
           # Filter out values provided in the ignore attribute on csc_slurm_partition
-          partitions.select {|p| !opts[:ignore].include?(p) }
+          partitions.select {|partition, projects| !opts[:ignore].include?(partition) }
         elsif !opts[:select].nil?
           # Only include values provided in the select attribute on csc_slurm_partition
-          partitions.select {|p| opts[:select].include?(p) }
+          partitions.select {|partition, projects| opts[:select].include?(partition) }
         else
           partitions
         end
@@ -34,9 +44,7 @@ module SmartAttributes
         if !opts[:partitions].nil?
           return opts[:partitions]
         end
-        sacct_res = `#{__dir__}/../scripts/p_and_p.sh`
-        res_arr = sacct_res.split('@')
-        filter_partitions(res_arr[0].split(' '))
+        filter_partitions(@partitions)
       end
 
       # Form label for this attribute
@@ -47,7 +55,7 @@ module SmartAttributes
       end
 
       def select_choices
-        get_partitions
+        get_partitions.map { |partition, project_data| [partition, *project_data]}
       end
 
       # Submission hash describing how to submit this attribute

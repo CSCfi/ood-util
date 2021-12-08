@@ -1,3 +1,8 @@
+begin
+  require_relative '../scripts/slurm_project_partition'
+rescue LoadError
+end
+
 module SmartAttributes
   class AttributeFactory
     # Build this attribute object with defined options
@@ -17,9 +22,7 @@ module SmartAttributes
       end
 
       def get_projects
-          sacct_res = `#{__dir__}/../scripts/p_and_p.sh`
-        res_arr = sacct_res.split('@')
-        slurm_projects = res_arr[1].split(' ')    
+        SlurmProjectPartition.projects
       end
 
       # Form label for this attribute
