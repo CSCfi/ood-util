@@ -5,11 +5,15 @@ Ruby code in `form.yml.erb` is executed every time the app template is rendered,
 - csc_cores
 - csc_extra_desc
 - csc_gpu
+- csc_header_resources
+- csc_header_settings
 - csc_memory
 - csc_nvme
+- csc_reset_cache
 - csc_slurm_limits
 - csc_slurm_partition
 - csc_slurm_project
+- csc_time
 
 Example `form.yml.erb` that uses some smart attributes:
 ```yml
@@ -40,6 +44,27 @@ form:
   - csc_slurm_partition
 ```
 
+The partitions available can be filtered by adding `select` or `ignore` to `csc_slurm_partition`.
+Select selects the defined partitions from the list of available partitions to the user.
+Ignore selects all available partitions except the ones provided in the ignore field.
+
+Example:
+```yml
+# form.yml.erb
+<% require "/ood/deps/util/attributes/csc_smart_attributes" -%>
+
+attributes:
+  csc_slurm_partition:
+    value: "interactive"
+    select:
+      - "interactive"
+      - "small"
+      - "test"
+
+form:
+  - csc_slurm_partition
+```
+
 ### csc_cores/memory/nvme/time/gpu
 Various elements for letting the user select CPUs, memory, NVME size, time and GPUs for the job. These values are not automatically submitted to Slurm so `submit.yml.erb` must be modified.  
 Example:
@@ -61,6 +86,9 @@ script:
 ### csc_slurm_limits
 A hidden input element that contains the limits for CPUs, memory, NVME, time and GPU. See form validation section.
 
+### csc_header_resources/settings
+Provides a large header for separating the form into sections where it is clear which form elements configure the resources (cores,memory,time, etc.) for the app and which form elements configure the app specific settings (modules, working directory, etc.).
+
 ### csc_extra_desc
 A form element for writing a longer description using Markdown and HTML for the interactive app and form.  
 ```yml
@@ -75,6 +103,21 @@ attributes:
 form:
   - csc_extra_desc
 ```
+
+### csc_reset_cache
+When used with the form validation Javascript it adds a button below the launch button that can be used to reset the form contents to default, "resets the cache".
+Usage:
+```yml
+# form.yml.erb
+<% require "/ood/deps/util/attributes/csc_smart_attributes" -%>
+
+attributes:
+  csc_reset_cache:
+    app: "sys/ood-myapp"
+form:
+  - csc_reset_cache
+```
+Where `sys/ood-myapp` is the name the app is deployed as.
 
 ## Interactive app form validation
 The errors that Slurm gives when an user tries to submit a job with for example higher time limit than the partition allows can be quite confusing. To improve the user experience the form can be validated clientside before sending it. Note that the clientside form validation does not prevent the user from submitting the form with values outside the allowed values. If that needs to be prevented it must be done for example in `submit.yml.erb`
