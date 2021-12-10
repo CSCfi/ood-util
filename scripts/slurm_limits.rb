@@ -1,3 +1,8 @@
+#
+# This script fetches information about resource limits and maximum job submissions from Slurm
+# Used in csc_slurm_limits smart attribute to provide form validation using form_validated.js
+#
+
 require 'open3'
 require 'json'
 require 'active_support'

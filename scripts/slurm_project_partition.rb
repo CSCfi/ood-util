@@ -1,3 +1,8 @@
+#
+# This script fetches the project and partitions the user has access to from Slurm.
+# Cached (memoized) for as long as the PUN is alive.
+#
+
 require 'open3'
 
 module SlurmProjectPartition
