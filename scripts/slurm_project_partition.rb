@@ -73,6 +73,17 @@ module SlurmProjectPartition
         end
     end
 
+    # Cached version of the get_projects_full, in the format for select_choices in smart_attributes
+    def projects_full_for_smart_attribute
+      @projects_full_for_smart_attribute ||=
+        begin
+          projects = projects_full
+          projects.collect do |p|
+            [p[:name], p[:name]]
+          end
+        end
+    end
+
     # Returns a hash with the partitions as key and array of projects as values
     # example: {"interactive": ["project_1234", "project_5678"], "small": ["project_5678"]}
     def get_partitions(slurm_output)

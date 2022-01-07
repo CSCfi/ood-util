@@ -22,7 +22,7 @@ module SmartAttributes
       end
 
       def get_projects
-        SlurmProjectPartition.projects
+        SlurmProjectPartition.projects_full
       end
 
       # Form label for this attribute
@@ -33,7 +33,13 @@ module SmartAttributes
       end
 
       def select_choices
-        get_projects.collect { |p| [p, p] }
+        @select_choices ||=
+          begin
+            get_projects.collect do |p|
+            full_name = p[:description] == p[:name] ? p[:name] : "#{p[:name]} (#{p[:description]})"
+            [full_name, p[:name]]
+            end
+          end
       end
 
       # Submission hash describing how to submit this attribute
