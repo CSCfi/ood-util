@@ -55,6 +55,22 @@ class TestSlurmProjectPartition < Minitest::Test
       ], fmi)
   end
 
+  def test_get_projects_full
+    empty_projects = SlurmProjectPartition.get_projects_full("", "")
+    assert_equal([], empty_projects)
+
+    projects = SlurmProjectPartition.get_projects_full(@slurm_output, @csc_projects_output)
+
+    assert_equal 4, projects.length
+    assert_includes projects, {:name => "ood_installation", :description => "Puhti Open onDemand Environment Management"}
+    assert_includes projects, {:name => "project_2002037", :description => "project_2002037"}
+
+    projects_no_csc_projects = SlurmProjectPartition.get_projects_full(@slurm_output, "")
+
+    assert_equal 4, projects_no_csc_projects.length
+    assert_includes projects_no_csc_projects, {:name => "ood_installation", :description => "ood_installation"}
+  end
+
   def setup
     @slurm_output = <<-EOF
 puhti|ood_installation|robinkar|interactive|1|||||||2|||2|||normal|||
@@ -87,6 +103,10 @@ puhti|project_2001659|robinkar|gputest|1|||gres/gpu:v100=8||||1|||2|||normal|||
 puhti|project_2001659|robinkar|hugemem|1|||||||200|||400|||normal|||
 puhti|project_2002037|nortamoh|fmi|1|||||||200|||400|||normal|||
 puhti|project_2002037|nortamoh|fmitest|1|||||||2|||4|||normal|||
+    EOF
+    @csc_projects_output = <<-EOF
+ood_installation,Puhti Open onDemand Environment Management
+project_2001659,CSC user's maintenance
     EOF
   end
 
