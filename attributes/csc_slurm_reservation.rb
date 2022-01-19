@@ -101,7 +101,7 @@ module SmartAttributes
           return {}
         end
         # Use reservation partition if defined, overrides the partition field value
-        if reservation.partition_name == "(nil)"
+        if reservation.partition_name == "(null)"
           return { script: { reservation_id: value.strip } }
         else
           return { script: { queue_name: reservation.partition_name, reservation_id: value.strip } }
