@@ -73,6 +73,15 @@ module SmartAttributes
         if reservation.partition_name != "(null)"
           extra_opts = [{"data-hide-csc-slurm-partition": true}, {"data-set-csc-slurm-partition": reservation.partition_name}]
         end
+
+        # Check what projects that the user has access to that they can use for the reservation
+        reservation_projects = (reservation.accounts + reservation.groups).uniq
+        user_projects = User.new.groups.map(&:name)
+        common_projects = reservation_projects & user_projects
+        if common_projects.length == 1
+          # Set project automatically if there is only one option
+          extra_opts.push({"data-set-csc-slurm-project": common_projects.first})
+        end
         [reservation.name, reservation.name, {"data-partition": reservation.partition_name}, *extra_opts]
       end
 
