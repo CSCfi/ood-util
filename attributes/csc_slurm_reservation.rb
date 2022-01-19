@@ -56,11 +56,11 @@ module SmartAttributes
 
       def select_choice(reservation)
         # Hide the partition field in form if this reservation defines a partition
-        extra_opts = []
+        extra_opts = nil
         if !reservation.partition_name.empty?
           extra_opts = {"data-hide-csc-slurm-partitions": true}
         end
-        [reservation.name, reservation.name, {"data-hide-csc-slurm-project": true}]
+        [reservation.name, reservation.name, extra_opts].compact
       end
 
       def select_choices
