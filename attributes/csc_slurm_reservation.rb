@@ -71,9 +71,9 @@ module SmartAttributes
         # Hide the partition field in form if this reservation defines a partition
         extra_opts = nil
         if reservation.partition_name != "(null)"
-          extra_opts = {"data-hide-csc-slurm-partitions": true}
+          extra_opts = [{"data-hide-csc-slurm-partition": true}, {"data-set-csc-slurm-partition": reservation.partition_name}]
         end
-        [reservation.name, reservation.name, {"data-partition": reservation.partition_name}, extra_opts].compact
+        [reservation.name, reservation.name, {"data-partition": reservation.partition_name}, *extra_opts]
       end
 
       # Cache an unfiltered list of the options
@@ -99,12 +99,8 @@ module SmartAttributes
         reservation = reservations.find { |r| r.name == value }
         if reservation.nil?
           return {}
-        end
-        # Use reservation partition if defined, overrides the partition field value
-        if reservation.partition_name == "(null)"
-          return { script: { reservation_id: value.strip } }
         else
-          return { script: { queue_name: reservation.partition_name, reservation_id: value.strip } }
+          return { script: { reservation_id: value.strip } }
         end
       end
     end
