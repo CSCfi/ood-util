@@ -85,7 +85,8 @@ module SlurmReservation
     # Fetches the reservations from slurm, parses them and filters them
     # Example: [#<struct SlurmReservation::Reservation name="test", nodes=["r07c[01-06]"], partition_name="test", users=["robinkar"], groups=[], flags=["MAINT", "SPEC_NODES", "PART_NODES"], accounts=[], state="ACTIVE">]
     def reservations(user=ENV["USER"])
-      available_reservations(query_slurm, user)
+      @reservations_cache ||= {}
+      @reservations_cache[user] ||= available_reservations(query_slurm, user)
     end
 
     # List of groups the user belongs to

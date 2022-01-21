@@ -1,5 +1,6 @@
 begin
   require_relative '../scripts/slurm_project_partition'
+  require_relative '../scripts/slurm_reservation'
 rescue LoadError
 end
 
@@ -35,9 +36,15 @@ module SmartAttributes
       def select_choices
         @select_choices ||=
           begin
+            reservations = SlurmReservation.reservations
             get_projects.collect do |p|
-            full_name = p[:description] == p[:name] ? p[:name] : "#{p[:name]} (#{p[:description]})"
-            [full_name, p[:name]]
+              full_name = p[:description] == p[:name] ? p[:name] : "#{p[:name]} (#{p[:description]})"
+              data_option_for = reservations.filter_map do |res|
+                res_name = res.name.gsub(/_/, '-')
+                allowed = (res.accounts + res.groups).uniq
+                {"data-option-for-csc-slurm-reservation-#{res_name}".to_sym => false} if !allowed.empty? && !allowed.include?(p[:name])
+              end
+              [full_name, p[:name], *data_option_for]
             end
           end
       end
