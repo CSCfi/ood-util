@@ -54,6 +54,36 @@ module SlurmProjectPartition
         end
     end
 
+    # Returns a list of projects from the slurm output and csc-projects output, includes names
+    # e.g. [{:name => "project_2001659", :description => "CSC user's maintenance"}, {:name => "ood_installation", :description => "Puhti Open onDemand Environment Management"}]
+    def get_projects_full(slurm_output, csc_projects_output)
+      parsed = parse_slurm_output(slurm_output)
+      project_names = parse_csc_projects(csc_projects_output)
+      # get only the first part(project) of the array, filter unique entries
+      parsed.map do | p_and_p |
+        {:name => p_and_p[0], :description => project_names.fetch(p_and_p[0], p_and_p[0]) }
+      end.uniq
+    end
+
+    # Cached version of the get_projects_full
+    def projects_full
+      @projects_full ||=
+        begin
+          get_projects_full(query_slurm, run_csc_projects)
+        end
+    end
+
+    # Cached version of the get_projects_full, in the format for select_choices in smart_attributes
+    def projects_full_for_smart_attribute
+      @projects_full_for_smart_attribute ||=
+        begin
+          projects = projects_full
+          projects.collect do |p|
+            [p[:name], p[:name]]
+          end
+        end
+    end
+
     # Returns a hash with the partitions as key and array of projects as values
     # example: {"interactive": ["project_1234", "project_5678"], "small": ["project_5678"]}
     def get_partitions(slurm_output)
@@ -75,12 +105,7 @@ module SlurmProjectPartition
       parts.transform_values do |projects|
         # select the project that are not allowed for this partition
         (all_projects - projects).map do |project|
-          # OOD has strange behaviour for the way these project names need to behave.
-          # Underscore needs to be replaced by dash if the following character is a letter,
-          # otherwise remove the underscore.
-          # ood_installation => ood-installation
-          # project_123456 => project123456
-          proj_name = project.gsub(/_([a-z])/, '-\1').gsub(/_/, '')
+          proj_name = project.gsub(/_/, '-')
           {"data-option-for-csc-slurm-project-#{proj_name}".to_sym => false}
         end
       end
@@ -99,6 +124,23 @@ module SlurmProjectPartition
         begin
           get_partitions_with_data(query_slurm)
         end
+    end
+
+    # Returns a hash where the keys are the project name and the description is the value
+    # e.g. {"project_2001659"=>"CSC user's maintenance", "ood_installation"=>"Puhti Open onDemand Environment Management"}
+    def parse_csc_projects(output)
+      projects = output.lines.map { |line| line.strip.split(",", 2) }.to_h
+      return projects
+    end
+
+    def run_csc_projects
+      # Should probably have these paths somewhere else
+      env = {"LD_LIBRARY_PATH" => "/ood/deps/lib:#{ENV["LD_LIBRARY_PATH"]}"}
+      cmd = "/ood/deps/soft/csc-projects"
+      # N = project name, T = Short description
+      args = "--output=N,T"
+      output = run_command(env, cmd, args)
+      return output
     end
   end
 end
