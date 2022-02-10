@@ -11,7 +11,7 @@ const TIME_REGEX = /^(?:(?:(?:(\d+)-)?(\d+):)?(\d+):)?(\d+)$/;
 // Prefix for all form elements used by OOD
 const BC_PREFIX = "batch_connect_session_context";
 
-$(document).ready(function () {
+(function () {
   // Populate slurm_limits object with the limits
   const limits_input = $(`#${BC_PREFIX}_csc_slurm_limits`);
   slurm_limits = limits_input.data("limits") || {};
@@ -27,9 +27,10 @@ $(document).ready(function () {
   // Register event handlers
   register_event_handlers();
   update_min_max(false);
-  // Validating immediately makes the message disappear when the page is fully loaded
-  // Validate after a short delay
-  setTimeout(validate_form, 500);
+})();
+
+$(window).on("load", function () {
+  setTimeout(validate_form, 100);
 });
 
 // Disable launch button disabling and validation of form
@@ -403,7 +404,7 @@ function show_confirm_modal(title, text, callback, confirmText = "OK", cancelTex
 
 // Reset defaults button
 
-$(document).ready(function () {
+(function () {
   const reset_cache_field = $("#batch_connect_session_context_csc_reset_cache");
   if (reset_cache_field.length == 0) {
     return;
@@ -418,7 +419,7 @@ $(document).ready(function () {
     const cache_file = reset_cache_field.data("app");
     deleteCache(cache_file);
   });
-});
+})();
 
 function deleteCache(cache_file) {
   if (cache_file == null) {
