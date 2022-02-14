@@ -26,7 +26,7 @@ module SmartAttributes
       # @return [String] widget type
       def widget
         # Hide this widget if the user has no reservations they can use
-        if reservations.length > 0
+        if select_choices.length > 1
           "select"
         else
           "hidden_field"
@@ -35,7 +35,7 @@ module SmartAttributes
 
       # Value should be empty if no reservation can be selected (allows caching of this field)
       def value
-        if reservations.length > 0
+        if select_choices.length > 1
           opts[:value].to_s
         else
           ""
