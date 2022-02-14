@@ -38,6 +38,9 @@ module SlurmReservation
     # Parses the output from scontrol show reservation
     # Returns a list of Reservation
     def parse_reservations(slurm_output)
+      if slurm_output == "No reservations in the system"
+        return []
+      end
       reservations = parse_scontrol_show(slurm_output)
       reservations.map { |res| parse_reservation(res) }
     end
