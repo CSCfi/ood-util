@@ -9,6 +9,7 @@ class TestSlurmReservation < Minitest::Test
 
   def test_parse_reservations
     assert_equal [], SlurmReservation.parse_reservations("")
+    assert_equal [], SlurmReservation.parse_reservations("No reservations in the system")
 
     parsed = SlurmReservation.parse_reservations(@slurm_output)
     assert_equal 3, parsed.length
