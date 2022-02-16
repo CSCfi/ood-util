@@ -80,7 +80,7 @@ module SmartAttributes
       # Filtering needs to be done for each app
       def select_choices_unfiltered
         # Always have an option for no reservation
-        @select_choices_unfiltered ||= [["No reservation", "", {"data-partition": "(null)"}]].concat(reservations.map { |res| select_choice(res) } )
+        @@select_choices_unfiltered ||= [["No reservation", "", {"data-partition": "(null)"}]].concat(reservations.map { |res| select_choice(res) } )
       end
 
       # Filter the available reservations based on the allowed partitions for this app

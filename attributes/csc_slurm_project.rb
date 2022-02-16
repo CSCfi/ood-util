@@ -34,7 +34,7 @@ module SmartAttributes
       end
 
       def select_choices
-        @select_choices ||=
+        @@select_choices ||=
           begin
             reservations = SlurmReservation.reservations
             get_projects.collect do |p|
