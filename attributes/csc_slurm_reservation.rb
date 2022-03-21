@@ -26,7 +26,7 @@ module SmartAttributes
       # @return [String] widget type
       def widget
         # Hide this widget if the user has no reservations they can use
-        if reservations.length > 0
+        if select_choices.length > 1
           "select"
         else
           "hidden_field"
@@ -35,7 +35,7 @@ module SmartAttributes
 
       # Value should be empty if no reservation can be selected (allows caching of this field)
       def value
-        if reservations.length > 0
+        if select_choices.length > 1
           opts[:value].to_s
         else
           ""
@@ -80,7 +80,7 @@ module SmartAttributes
       # Filtering needs to be done for each app
       def select_choices_unfiltered
         # Always have an option for no reservation
-        @select_choices_unfiltered ||= [["No reservation", "", {"data-partition": "(null)"}]].concat(reservations.map { |res| select_choice(res) } )
+        @@select_choices_unfiltered ||= [["No reservation", "", {"data-partition": "(null)"}]].concat(reservations.map { |res| select_choice(res) } )
       end
 
       # Filter the available reservations based on the allowed partitions for this app

@@ -16,7 +16,7 @@ module SmartAttributes
     class CSCPartition < Attribute
 
       def initialize(id, opts={})
-        @partitions = SlurmProjectPartition.partitions_with_data
+        @@partitions ||= SlurmProjectPartition.partitions_with_data
         super(id, opts)
       end
 
@@ -44,7 +44,7 @@ module SmartAttributes
         if !opts[:partitions].nil?
           return opts[:partitions]
         end
-        filter_partitions(@partitions)
+        filter_partitions(@@partitions)
       end
 
       # Form label for this attribute
