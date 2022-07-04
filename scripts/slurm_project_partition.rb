@@ -135,8 +135,8 @@ module SlurmProjectPartition
 
     def run_csc_projects
       # Should probably have these paths somewhere else
-      env = {"LD_LIBRARY_PATH" => "/ood/deps/lib:#{ENV["LD_LIBRARY_PATH"]}"}
-      cmd = "/ood/deps/soft/csc-projects"
+      env = {"LD_LIBRARY_PATH" => "#{ENV["CSC_OOD_DEPS_PATH"]}/lib:#{ENV["LD_LIBRARY_PATH"]}"}
+      cmd = "#{ENV["CSC_OOD_DEPS_PATH"]}/soft/csc-projects"
       # N = project name, T = Short description
       args = "--output=N,T"
       output = run_command(env, cmd, args)
