@@ -146,6 +146,7 @@ module SmartAttributes
           # Include directory if it is not a private or project module
           dir = Pathname.new(path).basename
           val = include_dir ? "#{dir}/#{name}" : name
+          val = "#{project}/#{val}" unless project.nil?
 
           # option for dropdown, set resources and extra data
           [
