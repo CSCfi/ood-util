@@ -52,8 +52,10 @@ function save_original_limits() {
 
 // Validate inputs and check submits on form changes
 function register_event_handlers() {
-  get_partition_input().change(part_proj_change);
-  get_project_input().change(part_proj_change);
+  const part_input = get_partition_input();
+  part_input.change(part_proj_change);
+  const project_input = get_project_input();
+  project_input.change(part_proj_change);
 
   const elements = get_inputs();
   elements.each((i, el) => {
@@ -71,13 +73,13 @@ function count_running_resources(submits) {
     return jobs;
   }
   for (const job of submits) {
-    jobs["partition"][job["part"]] = jobs["partition"][job["part"]] || {};
-    jobs["project"][job["acc"]] = jobs["project"][job["acc"]] || {};
-
     for (const [res, value] of Object.entries(job["tres"])) {
       if (job["state"] !== "R") {
         continue;
       }
+      jobs["partition"][job["part"]] = jobs["partition"][job["part"]] || {};
+      jobs["project"][job["acc"]] = jobs["project"][job["acc"]] || {};
+
       if (res in jobs["partition"][job["part"]]) {
         jobs["partition"][job["part"]][res] += value;
       } else {
@@ -132,11 +134,15 @@ function get_partition() {
   if (partition_override) {
     return partition_override;
   }
-  return get_partition_input().val();
+  const part_input = get_partition_input();
+  const part = part_input.val();
+  return part;
 }
 
 function get_project() {
-  return get_project_input().val();
+  const proj_input = get_project_input();
+  const proj = proj_input.val();
+  return proj;
 }
 
 // Ask user to submit if form has invalid data, otherwise just submit
