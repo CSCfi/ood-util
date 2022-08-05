@@ -21,7 +21,7 @@ module SmartAttributes
       def widget
         "text_field"
       end
-      
+
       def submit(fmt: nil)
         {}
       end
