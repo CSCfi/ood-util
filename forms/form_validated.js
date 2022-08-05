@@ -52,10 +52,8 @@ function save_original_limits() {
 
 // Validate inputs and check submits on form changes
 function register_event_handlers() {
-  const part_input = get_partition_input();
-  part_input.change(part_proj_change);
-  const project_input = get_project_input();
-  project_input.change(part_proj_change);
+  get_partition_input().change(part_proj_change);
+  get_project_input().change(part_proj_change);
 
   const elements = get_inputs();
   elements.each((i, el) => {
@@ -65,27 +63,21 @@ function register_event_handlers() {
 
 function count_running_resources(submits) {
   const jobs = {
-    "partition": {
-
-    },
-    "project": {
-
-    },
-    "numjobs": {
-
-    }
+    "partition": {},
+    "project": {},
+    "numjobs": {}
   };
   if (submits == null) {
     return jobs;
   }
   for (const job of submits) {
+    jobs["partition"][job["part"]] = jobs["partition"][job["part"]] || {};
+    jobs["project"][job["acc"]] = jobs["project"][job["acc"]] || {};
+
     for (const [res, value] of Object.entries(job["tres"])) {
       if (job["state"] !== "R") {
         continue;
       }
-      jobs["partition"][job["part"]] = jobs["partition"][job["part"]] || {};
-      jobs["project"][job["acc"]] = jobs["project"][job["acc"]] || {};
-
       if (res in jobs["partition"][job["part"]]) {
         jobs["partition"][job["part"]][res] += value;
       } else {
@@ -140,15 +132,11 @@ function get_partition() {
   if (partition_override) {
     return partition_override;
   }
-  const part_input = get_partition_input();
-  const part = part_input.val();
-  return part;
+  return get_partition_input().val();
 }
 
 function get_project() {
-  const proj_input = get_project_input();
-  const proj = proj_input.val();
-  return proj;
+  return get_project_input().val();
 }
 
 // Ask user to submit if form has invalid data, otherwise just submit
@@ -180,37 +168,62 @@ function update_min_max(validate = true) {
   }
 }
 
+// Get the custom limits defined for the element (partition limit if defined, otherwise global or undefined)
+function get_custom_limits(el) {
+  const partition = get_partition_input().val();
+  const partMin = el.attr(`min-${partition}`);
+  const partMax = el.attr(`max-${partition}`);
+  const origMin = el.data("orig-min");
+  const origMax = el.data("orig-max");
+
+  const min = partMin != null ? partMin : origMin;
+  const max = partMax != null ? partMax : origMax;
+  return [min, max];
+}
+
 // Update the min and max attributes of an input elements
 function update_input(el) {
   // Use data-min and data-max to determine which slurm limit value to use
   const min = el.data("min");
   const max = el.data("max");
 
+  const [customMin, customMax] = get_custom_limits(el);
+
+  const parse = element_parse_function(el);
+
   const limits = get_current_limits();
-  if (min != null) {
-    const [limit, used, type] = get_limit(limits, min);
-    const actual_limit = limit == null ? el.data("orig-min") : limit;
+  if (min != null || customMin != null) {
+    let [limit, used, type] = get_limit(limits, min);
+    if (customMin != null && (limit == null || parse(customMin) < parse(limit))) {
+        limit = customMin;
+        used = 0;
+        type = "custom";
+    }
     if (limit == null) {
       el.removeAttr("min");
       el.removeData("used");
-      el.removeData("limit-type");
+      el.removeData("limit-type-min");
     } else {
-      el.attr("min", actual_limit);
+      el.attr("min", limit);
       el.data("used", used);
-      el.data("limit-type", type);
+      el.data("limit-type-min", type);
     }
   }
-  if (max != null) {
-    const [limit, used, type] = get_limit(limits, max);
-    const actual_limit = limit == null ? el.data("orig-max") : limit;
+  if (max != null || customMax != null) {
+    let [limit, used, type] = get_limit(limits, max);
+    if (customMax != null && (limit == null || parse(customMax) < parse(limit))) {
+        limit = customMax;
+        used = 0;
+        type = "custom";
+    }
     if (limit == null) {
       el.removeAttr("max");
       el.removeData("used");
-      el.removeData("limit-type");
+      el.removeData("limit-type-max");
     } else {
-      el.attr("max", actual_limit);
+      el.attr("max", limit);
       el.data("used", used);
-      el.data("limit-type", type);
+      el.data("limit-type-max", type);
     }
   }
 }
@@ -240,7 +253,6 @@ function get_limit(limits, name) {
   const maxtrespa = qos["maxtrespa"];
   if (name in maxtrespa) {
     const proj_jobs = slurm_submits["project"][get_project()] || {};
-    // Uncomment to enable limiting total resources
     const proj_used = proj_jobs[name] || 0;
     if (maxtrespa[name] - proj_used < limit) {
       limit = maxtrespa[name]- proj_used;
@@ -297,7 +309,7 @@ function check_submits() {
     if (!setValidity(part_input, msg)) {
       setValidity(proj_input, msg);
     }
-  } 
+  }
 
   if (proj_input[0] != null) {
     proj_input[0].reportValidity();
@@ -317,6 +329,18 @@ function validate_form() {
   });
 }
 
+// Convert number fields to int, time to int (seconds), use strings for the rest
+// Returns a function for parsing the field
+function element_parse_function(el) {
+  if (el.attr("type") === "number") {
+    return parseInt;
+  } else if (el.data("type") === `time`) {
+    return parse_time;
+  } else {
+    return (v) => v;
+  }
+}
+
 // Check the validity of an input element
 function validate_input(el) {
   if (!(el.attr("type") === "number" || el.attr("type") === "text")) {
@@ -328,23 +352,20 @@ function validate_input(el) {
   const max = el.attr("max");
   const val = el.val();
 
-  // Convert number fields to int, time to int (seconds), use strings for the rest
-  const parse_function = el.attr("type") === "number" ?
-    parseInt :
-    el.data("type") === `time` ?
-    parse_time : v => v;
+  const parse = element_parse_function(el);
 
-  const n_min = parse_function(min);
-  const n_max = parse_function(max);
-  const n_val = parse_function(val);
+  const n_min = parse(min);
+  const n_max = parse(max);
+  const n_val = parse(val);
 
   if (min != null && n_val < n_min) {
-    setValidity(el, `Value is less than the minimum for partition (${min})`);
+    const limit_type = el.data("limit-type-min");
+    setValidity(el, `Value is less than the minimum ${limit_type == "custom" ? "allowed" : "for partition" } (${min})`);
   } else if (max != null && n_val > n_max) {
     const used = el.data("used") || 0;
-    const limit_type = el.data("limit-type");
+    const limit_type = el.data("limit-type-max");
     const used_message = used > 0 ? `${used} used out of maximum ${n_max+used} per ${limit_type}` : `${max}`;
-    setValidity(el, `Value exceeds the maximum for partition (${used_message})`);
+    setValidity(el, `Value exceeds the maximum ${limit_type == "custom" ? "allowed" : "for partition" } (${used_message})`);
   } else {
     // Input element value ok (pattern/format is checked automatically)
     setValidity(el, "");
