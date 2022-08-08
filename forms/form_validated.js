@@ -103,7 +103,9 @@ function count_running_resources(submits) {
 }
 
 function part_proj_change() {
-  update_min_max();
+  // Need a short delay to let the normal OOD change handler run first. This is needed when
+  // changing to a project that doesn't have access to the currently selected project
+  setTimeout(update_min_max, 50);
 }
 
 function get_form() {
