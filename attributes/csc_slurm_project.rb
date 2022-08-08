@@ -1,7 +1,8 @@
 begin
   require_relative '../scripts/slurm_project_partition'
   require_relative '../scripts/slurm_reservation'
-rescue LoadError
+rescue LoadError => e
+  Rails.logger.error("Error loading slurm_project_partition.rb or slurm_reservation.rb: #{e}")
 end
 
 module SmartAttributes

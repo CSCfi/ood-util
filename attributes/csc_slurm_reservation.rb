@@ -3,7 +3,8 @@
 # Hides the partition field if the user selects a reservation that specifies a partition
 begin
   require_relative '../scripts/slurm_reservation'
-rescue LoadError
+rescue LoadError => e
+  Rails.logger.error("Error loading slurm_reservation.rb: #{e}")
 end
 module SmartAttributes
   class AttributeFactory

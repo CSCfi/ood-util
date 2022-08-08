@@ -1,6 +1,7 @@
 begin
-    require_relative '../scripts/slurm_limits'
-rescue LoadError
+  require_relative '../scripts/slurm_limits'
+rescue LoadError => e
+  Rails.logger.error("Error loading slurm_limits.rb: #{e}")
 end
 module SmartAttributes
   class AttributeFactory
@@ -23,6 +24,7 @@ module SmartAttributes
             submits = SlurmLimits.running
           end
         rescue Exception => e
+          Rails.logger.error("Error getting limits from Slurm: #{e}")
           error = e
         end
         # Allow devs to override the limits from slurm
