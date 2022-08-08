@@ -109,7 +109,7 @@ module SlurmLimits
     end
 
     def query_assoc_limits
-      run_command("sacctmgr", "--noheader", "-p", "show", "assoc", "format=Partition,Account,MaxJobs,MaxSubmit", "where", "user=#{ENV["USER"]}")
+      run_command("sacctmgr", "--noheader", "--parsable2", "show", "assoc", "format=Partition,Account,MaxJobs,MaxSubmit", "where", "user=#{ENV["USER"]}")
     end
 
     def parse_assoc_limits(slurm_output)
@@ -129,7 +129,7 @@ module SlurmLimits
     end
 
     def query_qos_limits
-      run_command("sacctmgr", "--noheader", "-p", "show", "qos", "format=Name,MaxTres,MaxTresPA,MaxTresPU")
+      run_command("sacctmgr", "--noheader", "--parsable2", "show", "qos", "format=Name,MaxTres,MaxTresPA,MaxTresPU")
     end
 
     def parse_qos_limits(slurm_output)
@@ -149,7 +149,7 @@ module SlurmLimits
     end
 
     def query_limits
-      run_command("sinfo", "--noheader", "--format", "%R|%l|%m|%z|%G")
+      run_command("sinfo", "--noheader", "--Format", "PartitionName:|,Time:|,Memory:|,SocketCoreThread:|,Gres:")
     end
 
     def parse_limits(slurm_output)
@@ -169,7 +169,7 @@ module SlurmLimits
     end
 
     def query_partitions
-      run_command("scontrol", "show", "partition", "-o")
+      run_command("scontrol", "show", "partition", "--oneliner")
     end
 
     def parse_partitions(slurm_output)
