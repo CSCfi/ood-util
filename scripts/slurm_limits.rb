@@ -2,7 +2,61 @@
 # This script fetches information about resource limits and maximum job submissions from Slurm
 # Used in csc_slurm_limits smart attribute to provide form validation using form_validated.js
 #
+'''
+Example output:
 
+SlurmLimits.limits
+{
+  "small": {
+    "name": "small", "time": "3-00:00:00", "mem": 373, "cpu": 40, "qos": {},
+      "gres/nvme": 3600, "gres/gpu:v100": 0
+  },
+  "interactive": {
+    "name": "interactive", "time": "7-00:00:00", "mem": 373, "cpu": 40,
+    "qos": {
+      "name": "interactive", "maxtres": {}, "maxtrespa": {},
+      "maxtrespu": {
+        "cpu": 8, "gres/nvme": 720, "mem": 76.0
+      }
+    },
+    "gres/nvme": 3600, "gres/gpu:v100": 0
+  }
+}
+
+SlurmLimits.assoc_limits
+{
+  "project_2002567_small": {
+    "maxjobs": 200, "maxsubmit": 400
+  },
+  "project_2001659_interactive": {
+    "maxjobs": 2, "maxsubmit": 2
+  },
+  "project_2001659_gpu": {
+    "maxjobs": 200, "maxsubmit": 400
+  }
+}
+
+
+SlurmLimits.running
+[
+  {
+    "jobid": "12696087", "acc": "project_2001659", "part": "interactive", "state": "R",
+    "tres": {
+      "cpu": 4,
+      "mem": 1.0,
+      "gres/nvme": 1
+    }
+  },
+  {
+    "jobid": "12696151", "acc": "project_2001659", "part": "interactive", "state": "R",
+    "tres": {
+      "cpu": 4,
+      "mem": 1.0,
+      "gres/nvme": 1
+    }
+  }
+]
+'''
 require 'open3'
 require 'json'
 require 'active_support'
@@ -21,6 +75,7 @@ module SlurmLimits
   QoSLimit = Struct.new(:name, :maxtres, :maxtrespa, :maxtrespu) do
     def initialize(*args)
       super(*args)
+      # convert tres strings into hashes
       self.maxtres = SlurmLimits.parse_tres(maxtres)
       self.maxtrespa = SlurmLimits.parse_tres(maxtrespa)
       self.maxtrespu = SlurmLimits.parse_tres(maxtrespu)
@@ -31,12 +86,15 @@ module SlurmLimits
     def initialize(*args)
       super(*args)
       self.mem = self.mem.to_i/1024
+      # cpu is `S:C:T` (sockets:cores:threads), multiply to get max CPU
       self.cpu = self.cpu.split(":").map {|v| v.to_i}.inject(:*)
       self.gres = parse_gres_string(self.gres)
       self.qos = get_qos
     end
 
     def parse_gres_string(gres)
+      # gres is either null or a comma separated list
+      # e.g. `gpu:v100:4(S:0-1),nvme:3600`
       if gres == "(null)"
         return {}
       end
@@ -44,6 +102,7 @@ module SlurmLimits
       unless gres == nil
         gres.split(",") do |res|
           if res.start_with?("nvme")
+            # e.g. `nvme:3600`
             gres_limits["gres/nvme"] = res.split(":")[1].to_i
           elsif res.start_with?("gpu:v100") # TODO: support other GPU types
             gres_limits["gres/gpu:v100"] = res.gsub(/gpu:v100:/, "").to_i
@@ -54,8 +113,10 @@ module SlurmLimits
     end
 
     def get_qos
+      # Not all partitions have QoS set, look up which qos is set for the partition
       part_info = SlurmLimits.partitions.fetch(self.name, {})
       qos_name = part_info.fetch("QoS", "N/A")
+      # Get MaxTres, MaxTresPA and MaxTresPU for the QoS
       SlurmLimits.qos_limits.fetch(qos_name, {})
     end
   end
@@ -90,6 +151,9 @@ module SlurmLimits
     end
 
     def query_running
+      # e.g.
+      # `12695781|project_2001659|interactive|PD|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
+      # `12695782|project_2001659|interactive|R|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
       run_command("squeue", "--noheader", "--Format", "JobID:|,Account:|,Partition:|,StateCompact:|,tres-alloc:|", "--user", ENV["USER"])
     end
 
@@ -109,12 +173,18 @@ module SlurmLimits
     end
 
     def query_assoc_limits
+      # e.g.
+      # |default_no_jobs|0|0
+      # interactive|project_2001659|2|2
+      # longrun|project_2001659|200|400
       run_command("sacctmgr", "--noheader", "--parsable2", "show", "assoc", "format=Partition,Account,MaxJobs,MaxSubmit", "where", "user=#{ENV["USER"]}")
     end
 
     def parse_assoc_limits(slurm_output)
       limits = parse(slurm_output, AssocLimit, "|", 4)
         .reject { |assoc| assoc[:acc] == "default_no_jobs" }
+      # assoc limits are defined per project(account) and partition,
+      # use a Hash with key `<project>_<partition>`
       limits.map do |assoc|
         k = "#{assoc[:acc]}_#{assoc[:part]}"
         v = {:maxjobs => assoc[:maxjobs].to_i, :maxsubmit => assoc[:maxsubmit].to_i}
@@ -134,6 +204,9 @@ module SlurmLimits
     end
 
     def query_qos_limits
+      # e.g.
+      # normal|||
+      # interactive|||cpu=8,gres/nvme=720,mem=76G
       run_command("sacctmgr", "--noheader", "--parsable2", "show", "qos", "format=Name,MaxTres,MaxTresPA,MaxTresPU")
     end
 
@@ -154,6 +227,9 @@ module SlurmLimits
     end
 
     def query_limits
+      # e.g.
+      # test|15:00|190000|2:20:1|(null)
+      # longrun|14-00:00:00|382000|2:20:1|nvme:3600
       run_command("sinfo", "--noheader", "--Format", "PartitionName:|,Time:|,Memory:|,SocketCoreThread:|,Gres:")
     end
 
@@ -176,10 +252,18 @@ module SlurmLimits
     end
 
     def query_partitions
+      # e.g.
+      # PartitionName=small AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL AllocNodes=ALL Default=YES QoS=N/A
+      # PartitionName=large AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL AllocNodes=ALL Default=NO QoS=accrue_large
       run_command("scontrol", "show", "partition", "--oneliner")
     end
 
+    # Returns a Hash with partition names as keys and partition info (Hash) as values
+    # e.g.
+    # { "small": { "QoS": "N/A", "Nodes": "r01c[01-48],...", ... }, "large": ... }
     def parse_partitions(slurm_output)
+      # slurm_output is in format `key=value key2=value2 ...`
+      # one line per partition
       lines = slurm_output.strip.split("\n")
       lines.map do |line|
         part = {}
@@ -192,6 +276,10 @@ module SlurmLimits
     end
 
     # Combine the possible node types eg. M, IO for a partition into one
+    # Slurm automatically selects correct node type
+    # e.g. max memory is 382000 and max nvme is 3600
+    # interactive|7-00:00:00|382000|2:20:1|nvme:3600
+    # interactive|7-00:00:00|190000|2:20:1|nvme:1490
     def combine_node_types(partition)
       max_partition = partition
         .inject{ |max_part, new_part| max_part
@@ -203,7 +291,10 @@ module SlurmLimits
       max_partition
     end
 
+    # Parse tres strings in running jobs and QoS limits to a Hash
     def parse_tres(tres)
+      # QoS tres format: `cpu=8,gres/nvme=720,mem=76G`
+      # running job tres format: `cpu=1,mem=2G,node=1,billing=1,gres/nvme=4`
       return {} if tres.nil?
       tres.split(",").filter_map do |r|
         res, value = r.split("=")
