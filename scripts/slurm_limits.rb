@@ -104,8 +104,9 @@ module SlurmLimits
           if res.start_with?("nvme")
             # e.g. `nvme:3600`
             gres_limits["gres/nvme"] = res.split(":")[1].to_i
-          elsif res.start_with?("gpu:v100") # TODO: support other GPU types
-            gres_limits["gres/gpu:v100"] = res.gsub(/gpu:v100:/, "").to_i
+          elsif res.start_with?("gpu:")
+            _, type, amount = res.split(":", 3)
+            gres_limits["gres/gpu:#{type}"] = amount.to_i
           end
         end
       end
