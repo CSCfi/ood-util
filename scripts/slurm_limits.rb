@@ -45,7 +45,7 @@ module SlurmLimits
         gres.split(",") do |res|
           if res.start_with?("nvme")
             gres_limits["gres/nvme"] = res.split(":")[1].to_i
-          elsif res.start_with?("gpu:v100")
+          elsif res.start_with?("gpu:v100") # TODO: support other GPU types
             gres_limits["gres/gpu:v100"] = res.gsub(/gpu:v100:/, "").to_i
           end
         end
@@ -113,8 +113,13 @@ module SlurmLimits
     end
 
     def parse_assoc_limits(slurm_output)
-      limits = parse(slurm_output, AssocLimit, "|", 4).reject { |assoc| assoc[:acc] == "default_no_jobs" }
-      limits.map { |assoc| ["#{assoc[:acc]}_#{assoc[:part]}", {:maxjobs => assoc[:maxjobs].to_i, :maxsubmit => assoc[:maxsubmit].to_i}] }.to_h
+      limits = parse(slurm_output, AssocLimit, "|", 4)
+        .reject { |assoc| assoc[:acc] == "default_no_jobs" }
+      limits.map do |assoc|
+        k = "#{assoc[:acc]}_#{assoc[:part]}"
+        v = {:maxjobs => assoc[:maxjobs].to_i, :maxsubmit => assoc[:maxsubmit].to_i}
+        [k, v]
+      end.to_h
     end
 
 
@@ -153,7 +158,9 @@ module SlurmLimits
     end
 
     def parse_limits(slurm_output)
-      parsed = parse(slurm_output, Limit, "|", 5).group_by { |p| p[:name]}.transform_values { |p| combine_node_types(p.map(&:to_h))}
+      parsed = parse(slurm_output, Limit, "|", 5)
+        .group_by { |p| p[:name]}
+        .transform_values { |p| combine_node_types(p.map(&:to_h))}
       # parsed list contains multiple definitions for a partition, eg. node type M and IO, combine them
       parsed
     end
@@ -186,7 +193,9 @@ module SlurmLimits
 
     # Combine the possible node types eg. M, IO for a partition into one
     def combine_node_types(partition)
-      max_partition = partition.inject{ |max_part, new_part| max_part.deep_merge(new_part){|key,old,new| [old, new].max} }
+      max_partition = partition
+        .inject{ |max_part, new_part| max_part
+        .deep_merge(new_part){|key,old,new| [old, new].max} }
       max_partition.merge!(max_partition.delete(:gres))
       # If none of the node types specify nvme or gpu the limit is 0
       max_partition["gres/gpu:v100"] = max_partition.fetch("gres/gpu:v100", 0)
@@ -196,25 +205,31 @@ module SlurmLimits
 
     def parse_tres(tres)
       return {} if tres.nil?
-      tres.split(",").filter_map { |r|
+      tres.split(",").filter_map do |r|
         res, value = r.split("=")
-        if res == "mem"
-          suffix = value[-1]
-          value = case suffix
-                  when "M"
-                    value.to_f/1024.0
-                  when "G"
-                    value.to_f
-                  when "T"
-                    value.to_f*1024.0
-                  else
-                    value.to_f/1024.0
-                  end
+        value = if res == "mem"
+          convert_mem_to_g(value)
         else
-          value = value.to_i
+          value.to_i
         end
         [res, value] unless res == "node" || res == "billing"
-      }.to_h
+      end.to_h
+    end
+
+    # Converts Slurm memory strings into GB (float) (e.g 2048M to 2.0G)
+    def convert_mem_to_g(str)
+      suffix = str[-1]
+      value = case suffix
+              when "M"
+                str.to_f/1024.0
+              when "G"
+                str.to_f
+              when "T"
+                str.to_f*1024.0
+              else
+                str.to_f/1024.0
+              end
+      value
     end
   end
 end
