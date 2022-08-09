@@ -20,10 +20,13 @@ The following commands are used by SlurmLimits for getting the limits from Slurm
 
 # sinfo gives most of the relevant limits, some partitions can use different node types, eg IO or M
 # the maximum value for each resource is used if multiple node types are possible
-sinfo --noheader --format %R|%l|%m|%z|%G
+sinfo --noheader --Format "PartitionName:|,Time:|,Memory:|,SocketCoreThread:|,Gres:"
 
 # sacctmgr show qos gives the qos limits, in this case only the interactive partition limits are relevant
-sacctmgr --noheader -p show qos format=Name,MaxTres%100,MaxTresPA%200
+sacctmgr --noheader -p show qos format=Name,MaxTres,MaxTresPA,MaxTresPU
+
+# get the name of the qos used for each partition
+scontrol show partition --oneliner
 ```
 ```
 # Maximum number of submits and current job submission amount
@@ -41,15 +44,33 @@ The resource limits are retrieved from SlurmLimits as `limits = SlurmLimits.limi
 Limits are returned in the following format:
 ```
 {
-    "small": {
-        "name": "small",
-        "time": "3-00:00:00",
-        "mem": 373,
-        "cpu": 40,
-        "gres/nvme": 3600,
-        "gres/gpu:v100": 0
+  "small": {
+    "name": "small",
+    "time": "3-00:00:00",
+    "mem": 373,
+    "cpu": 40,
+    "qos": {},
+    "gres/nvme": 3600,
+    "gres/gpu:v100": 0
+  },
+  "interactive": {
+    "name": "interactive",
+    "time": "7-00:00:00",
+    "mem": 373,
+    "cpu": 40,
+    "qos": {
+      "name": "interactive",
+      "maxtres": {},
+      "maxtrespa": {},
+      "maxtrespu": {
+        "cpu": 8,
+        "gres/nvme": 720,
+        "mem": 76.0
+      }
     },
-    ...
+    "gres/nvme": 3600,
+    "gres/gpu:v100": 0
+  }
 }
 ```
 
@@ -96,7 +117,7 @@ Example output, submits:
 ### csc_slurm_limits.rb
 `csc_slurm_limits.rb` is a smart attribute for OOD.
 It is used to generate a hidden input field with JSON data and is used for passing the data from the backend to the frontend.
-See [Smart ttributes README](https://gitlab.ci.csc.fi/compen/hpc-environment/ood-util/-/blob/master/attributes/README.md) for usage instructions.
+See [Smart attributes README](https://gitlab.ci.csc.fi/compen/hpc-environment/ood-util/-/blob/master/attributes/README.md) for usage instructions.
 The attributes `nofetchlimits`, `nosubmitscount` can be used for disabling fetching of limits from SlurmLimits.
 On the `data` attribute `limits`, `assoc_limits` and `submits` can be set to override the limits from SlurmLimits.
 If fixed partition is used for the form the `partition` attribute can be set on `csc_slurm_limits` `data` attribute.
