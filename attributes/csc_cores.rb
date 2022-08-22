@@ -33,11 +33,7 @@ module SmartAttributes
       end
 
       def value
-        if opts[:value].class.to_s.match(/UploadedFile/)
-          opts[:value]
-        else
-          (opts[:value] || "1").to_s
-        end
+        (opts[:value] || "1").to_s
       end
 
       # Submission hash describing how to submit this attribute

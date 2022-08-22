@@ -10,7 +10,7 @@ module SmartAttributes
 
   module Attributes
     class CSCGPU < Attribute
-      
+
       # Extend the default initializer
       def initialize(id, opts = {})
         # Validate field using the gres/gpu:v100 in csc_slurm_limits
@@ -18,7 +18,7 @@ module SmartAttributes
         opts[:min] ||= 0
         super(id, opts)
       end
-      
+
       # Type of form widget used for this attribute
       # @return [String] widget type
       def widget
@@ -31,13 +31,9 @@ module SmartAttributes
       def label(fmt: nil)
         (opts[:label] || "GPUs (V100)").to_s
       end
-      
+
       def value
-        if opts[:value].class.to_s.match(/UploadedFile/)
-          opts[:value]
-        else
-          (opts[:value] || "0").to_s
-        end
+        (opts[:value] || "0").to_s
       end
 
       # Submission hash describing how to submit this attribute

@@ -1,6 +1,7 @@
 begin
   require_relative '../scripts/slurm_project_partition'
-rescue LoadError
+rescue LoadError => e
+  Rails.logger.error("Error loading slurm_project_partition.rb: #{e}")
 end
 module SmartAttributes
   class AttributeFactory

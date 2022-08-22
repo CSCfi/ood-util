@@ -67,7 +67,7 @@ class TestSlurmLimits < Minitest::Test
   def test_parse_limits
     assert_equal({}, SlurmLimits.parse_limits(""))
     limits = SlurmLimits.parse_limits(@@slurm_output_limits)
-    assert_equal 9, limits.length
+    assert_equal 11, limits.length
 
     interactive = limits["interactive"]
     assert_equal "interactive", interactive[:name]
@@ -89,6 +89,14 @@ class TestSlurmLimits < Minitest::Test
 
     test = limits["test"]
     assert_equal "15:00", test[:time]
+
+    gpu_s = limits["gpusmall"]
+    assert_equal 4, gpu_s["gres/gpu:a100"]
+    assert_equal 3500, gpu_s["gres/nvme"]
+
+    gpu_m = limits["gpumedium"]
+    assert_equal 4, gpu_m["gres/gpu:a100"]
+    assert_equal 3500, gpu_s["gres/nvme"]
   end
 
   # Partitions
@@ -186,6 +194,8 @@ hugemem_longrun|7-00:00:00|764000+|2:20:1|(null)
 gputest|15:00|382000|2:20:1|gpu:v100:4(S:0-1),nvme:3600
 gpu|3-00:00:00|382000|2:20:1|gpu:v100:4(S:0-1),nvme:3600
 interactive|7-00:00:00|382000|2:20:1|nvme:3600
+gpusmall|1-12:00:00|490000|4:32:2|gpu:a100:4(S:0-1),nvme:3500
+gpumedium|1-12:00:00|490000|4:32:2|gpu:a100:4,nvme:3500
   EOF
 
   @@slurm_output_partitions = <<-EOF
