@@ -41,27 +41,24 @@ module SlurmProjectPartition
     def get_projects(slurm_output)
       parsed = parse_slurm_output(slurm_output)
       # get only the first part(project) of the array, filter unique entries
-      parsed.map do | p_and_p |
-        p_and_p[0]
-      end.uniq
+      parsed.map(&:first).uniq
     end
 
     # Cached version of the get_projects
     def projects
-      @projects ||=
-        begin
-          get_projects(query_slurm)
-        end
+      @projects ||= get_projects(query_slurm)
     end
 
     # Returns a list of projects from the slurm output and csc-projects output, includes names
     # e.g. [{:name => "project_2001659", :description => "CSC user's maintenance"}, {:name => "ood_installation", :description => "Puhti Open onDemand Environment Management"}]
     def get_projects_full(slurm_output, csc_projects_output)
       parsed = parse_slurm_output(slurm_output)
-      project_names = parse_csc_projects(csc_projects_output)
+      project_descriptions = parse_csc_projects(csc_projects_output)
       # get only the first part(project) of the array, filter unique entries
       parsed.map do | p_and_p |
-        {:name => p_and_p[0], :description => project_names.fetch(p_and_p[0], p_and_p[0]) }
+        project = p_and_p[0]
+        # Description will be project name if not defined
+        {:name => project, :description => project_descriptions.fetch(project, project) }
       end.uniq
     end
 
@@ -73,31 +70,23 @@ module SlurmProjectPartition
         end
     end
 
-    # Cached version of the get_projects_full, in the format for select_choices in smart_attributes
-    def projects_full_for_smart_attribute
-      @projects_full_for_smart_attribute ||=
-        begin
-          projects = projects_full
-          projects.collect do |p|
-            [p[:name], p[:name]]
-          end
-        end
-    end
-
     # Returns a hash with the partitions as key and array of projects as values
     # example: {"interactive": ["project_1234", "project_5678"], "small": ["project_5678"]}
     def get_partitions(slurm_output)
       parsed = parse_slurm_output(slurm_output)
-      # group the array into a hash where the partitions are keys and the project and partition array combinations are values
-      grouped = parsed.group_by { | p_and_p| p_and_p[1] }
+      # group project and partition combinations by partition
+      grouped = parsed.group_by(&:last)
       # map the inner arrays to an array of projects
-      grouped.map { |part, p_and_p| [part, p_and_p.map { |p| p[0] }] }.to_h
+      grouped.map do |part, p_and_p|
+        projects = p_and_p.map(&:first)
+        [part, projects]
+      end.to_h
     end
 
     # Returns a hash with the partitions as key and array of projects that are not available for the partition
     # The format is as expected by OOD in the forms when using OOD_BC_DYNAMIC_JS
     # e.g. hides non-fmi partition when fmi project is selected
-    # example: {"fmi": [{:"data-option-for-csc-slurm-project-project1234" => false}, {:"data-option-for-csc-slurm-project-project1234" => false}], ...}
+    # example: {"fmi": [{:"data-option-for-csc-slurm-project-project1234" => false}, {:"data-option-for-csc-slurm-project-project5678" => false}], ...}
     def get_partitions_with_data(slurm_output)
       parts = get_partitions(slurm_output)
       all_projects = get_projects(slurm_output)
@@ -113,17 +102,11 @@ module SlurmProjectPartition
 
     # Cached version of get_partitions
     def partitions
-      @partitions ||=
-        begin
-          get_partitions(query_slurm)
-        end
+      @partitions ||= get_partitions(query_slurm)
     end
 
     def partitions_with_data
-      @partitions_with_data ||=
-        begin
-          get_partitions_with_data(query_slurm)
-        end
+      @partitions_with_data ||= get_partitions_with_data(query_slurm)
     end
 
     # Returns a hash where the keys are the project name and the description is the value

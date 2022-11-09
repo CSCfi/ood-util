@@ -3,6 +3,48 @@
 The form validation is done by getting the Slurm limits when the app form is rendered, pass the limits in a hidden field in the form.
 The hidden field contents is then parsed as JSON and then used to validate the form using the HTML5 custom validation features.
 
+## Expected behaviour
+
+### Slurm resource limits
+
+#### Node limits
+Some partitions have different types of nodes with different limits.
+For example, the *small* partition on Puhti can use *M*, *L* or *IO* nodes.
+Slurm automatically selects the correct node type based on resources requested, so we want to always select the largest value allowed for resources.
+For the *small* partition, the maximum NVME size for each node type is 0GB, 1490GB and 3600GB, so the maximum possible is 3600GB.
+
+#### QoS limits
+
+Some partitions have QoS limits defined.
+In these cases we want to take the lower of the limits.
+For example, the nodes for interactive partition has 40 cores, but the interactive QoS is set at `cpu=8,gres/nvme=720,mem=76G` (maxtrespu), so maximum should be 8 for the interactive partition.
+
+##### maxtres vs maxtrespu vs maxtrespa
+
+For *maxtrespu* (per user) we count the currently running resources (jobs with state *R*) for the user for that partition.
+If the *maxtrespu* with the user's used resources subtracted is lower than the node limit, we use this limit instead.
+
+*maxtres* and *maxtrespa* (per account (project)) are not in practice used/relevant for the form validation, but are still supported by the form validation.
+We treat *maxtrespa* in the same way as *maxtrespu* (I'm unsure if we should include other users' used resources in *maxtrespa*).
+
+### Limits defined in the form
+
+`form.yml.erb` allows settings minimum and maximum values for the form in a few different ways.
+The standard OOD way is to set `max` or `min` for the form attribute.
+In addition to that, we also allow setting min/max values for specific partitions, by setting e.g. `min-interactive` on the form attribute, and in the `csc_slurm_limits` form attribute by directly overriding the Slurm limits found (see [Smart attributes README](https://gitlab.ci.csc.fi/compen/open-ondemand/ood-util/-/blob/master/attributes/README.md#setup).
+When the form is changed, we always check which limit is in effect (lowest).
+
+**Short example:**  
+The user has no jobs running.
+The interactive partition has node limit of 40 cores, and *maxtrespu* limit of `cpu=8`.
+In `form.yml.erb` `csc_cores` has the `max` attribute set to 6 and the `max-test` attribute set to 1.  
+When the user goes to the app form, selects the *interactive* partition and chooses 8 cores.
+The user now sees the error message `Value exceeds the maximum allowed (6)` since the `max` for this particular app was set to 6.  
+The user then changes the cores to 5 (which hides the error), launches the app and opens the form again.
+Since the user now has 5 cores used, they now see the error `Value exceeds the maximum for partition (5 used out of maximum 8 per user)`, since the *maxtrespu* QoS limit is now the lowest limit.
+If the user changes to the test partition, they now see the error message `Value exceeds the maximum allowed (1)` instead, since the limit set in `form.yml.erb` for the test partition is now used.
+
+
 ## Backend
 The backend is the part that runs on the OOD node when the app form is rendered.
 The main parts are `ood-util/attributes/csc_slurm_limits.rb` and `ood-util/scripts/slurm_limits.rb`.
