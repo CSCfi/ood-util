@@ -374,6 +374,7 @@ function validate_input(el) {
     const limit_type = el.data("limit-type-max");
     const used_message = used > 0 ? `${used} used out of maximum ${n_max+used} per ${limit_type}` : `${max}`;
     setValidity(el, `Value exceeds the maximum ${limit_type == "custom" ? "allowed" : "for partition" } (${used_message})`);
+    el.css('color', 'red');
     if ( el.parent()[0].childNodes[0].innerHTML.slice(-1) != "❗" ){                          
       el.parent()[0].childNodes[0].innerHTML = el.parent()[0].childNodes[0].innerHTML + '❗';
     }                                                                                         
