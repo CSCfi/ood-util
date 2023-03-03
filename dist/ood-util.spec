@@ -1,4 +1,4 @@
-%define app_path /www/ood/apps/sys/
+%define util_path /appl/opt/ood/util/
 
 Name:           ood-util
 Version:        13
@@ -11,7 +11,6 @@ License:        MIT
 Source:         %{name}-%{version}.tar.bz2
 
 Requires:       ondemand
-Requires:       ood-util
 
 # Disable debuginfo
 %global debug_package %{nil}
@@ -26,13 +25,23 @@ Open on Demand utils
 
 %install
 
-%__install -m 0755 -d %{buildroot}%{_localstatedir}%{app_path}%{name}
-%__install -m 0644 README.md %{buildroot}%{_localstatedir}%{app_path}%{name}/
+%__install -m 0755 -d %{buildroot}%{util_path}attributes
+%__install -m 0755 -d %{buildroot}%{util_path}forms
+%__install -m 0755 -d %{buildroot}%{util_path}scripts/tests
+
+%__install -m 0644 -D attributes/*.rb %{buildroot}%{util_path}attributes
+%__install -m 0644 -D forms/*.js      %{buildroot}%{util_path}forms
+%__install -m 0644 -D scripts/*.rb    %{buildroot}%{util_path}scripts
+%__install -m 0644 -D scripts/tests/* %{buildroot}%{util_path}scripts/tests
+%__install -m 0644 form_validation.md README.md LICENSE %{buildroot}%{util_path}/
 
 %files
 
-%{_localstatedir}%{app_path}%{name}
+%{util_path}
 
 %changelog
-* Fri Feb 23 2023 Sami Ilvonen <sami.ilvonen@csc.fi>
+* Fri Mar 3 2023 Robin Karlsson <robin.karlsson@csc.fi>
+- Basic working version of RPM
+
+* Thu Feb 23 2023 Sami Ilvonen <sami.ilvonen@csc.fi>
 - Initial version
