@@ -1,4 +1,4 @@
-%define util_path /appl/opt/ood/util/
+%define util_path /var/www/ood/deps/util/
 
 Name:           ood-util
 Version:        13
