@@ -15,6 +15,7 @@ module SmartAttributes
         # Validate field using mem from csc_slurm_limits
         opts[:data] = {:max => "mem"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         opts[:min] ||= 1
+        opts[:cacheable] = opts.fetch(:cacheable, false)
         super(id, opts)
       end
 

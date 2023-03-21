@@ -16,6 +16,7 @@ module SmartAttributes
         opts[:data] = {:max => "time", :type => "time"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         # Pattern currently allows invalid time values such as seconds/minutes/hours > 60
         opts[:pattern] ||= "^(?:(?:(?:(\\d+)-)?(\\d+):)?(\\d+):)?(\\d+)$"
+        opts[:cacheable] = opts.fetch(:cacheable, false)
         super(id, opts)
       end
 

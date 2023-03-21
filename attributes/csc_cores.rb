@@ -16,6 +16,7 @@ module SmartAttributes
         # Field will be validated using the cpu value from csc_slurm_limits
         opts[:data] = {:max => "cpu"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         opts[:min] ||= 1
+        opts[:cacheable] = opts.fetch(:cacheable, false)
         super(id, opts)
       end
 

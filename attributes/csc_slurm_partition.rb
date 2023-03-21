@@ -18,6 +18,7 @@ module SmartAttributes
 
       def initialize(id, opts={})
         @@partitions ||= SlurmProjectPartition.partitions_with_data
+        opts[:cacheable] = opts.fetch(:cacheable, true)
         super(id, opts)
       end
 

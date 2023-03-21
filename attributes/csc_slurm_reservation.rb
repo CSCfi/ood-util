@@ -20,6 +20,7 @@ module SmartAttributes
     class CSCReservation < Attribute
 
       def initialize(id, opts={})
+        opts[:cacheable] = opts.fetch(:cacheable, true)
         super(id, opts)
       end
 

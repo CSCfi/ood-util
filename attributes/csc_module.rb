@@ -36,6 +36,7 @@ module SmartAttributes
         @fn_keywords = {
           :PROJECTMODULES => "get_project_modules",
         }
+        opts[:cacheable] = opts.fetch(:cacheable, true)
         super(id, opts)
       end
 

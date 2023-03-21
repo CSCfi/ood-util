@@ -17,6 +17,10 @@ module SmartAttributes
 
   module Attributes
     class CSCProject < Attribute
+      def initialize(id, opts={})
+        opts[:cacheable] = opts.fetch(:cacheable, true)
+        super(id, opts)
+      end
       # Type of form widget used for this attribute
       # @return [String] widget type
       def widget
