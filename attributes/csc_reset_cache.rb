@@ -20,8 +20,9 @@ module SmartAttributes
 
       def initialize(id, opts={})
         # Some simple validation for app name
-        if opts.has_key?(:app) && opts[:app].match(/^(?:dev|sys|usr)\/[^.\/]+$/)
-          opts[:data] = {:app => BatchConnect::Session.dataroot(opts.delete(:app)).join("context.json").to_s}
+        if opts.has_key?(:app) && opts[:app].match(/^(?:dev|sys|usr)\/.+$/)
+          cache_file = "#{opts.delete(:app).gsub('/', '_')}.json"
+          opts[:data] = {:app => BatchConnect::Session.cache_root.join(cache_file).to_s}
         end
         super(id, opts)
       end

@@ -451,6 +451,7 @@ function show_confirm_modal(title, text, callback, confirmText = "OK", cancelTex
 })();
 
 function deleteCache(cache_file) {
+  const csrf_token = $("meta[name=csrf-token]").attr("content");
   if (cache_file == null) {
     console.warn("No app specified for reset form button");
     return;
@@ -458,8 +459,9 @@ function deleteCache(cache_file) {
   $.ajax({url: "/pun/sys/dashboard/transfers.json",
     type: "POST",
     contentType: "text/plain",
+    headers: {"X-CSRF-Token": csrf_token},
     data: JSON.stringify({"command": "rm", "files": [cache_file]}),
-    success: () => {window.location.reload()}
+    success: () => {window.location.href = window.location.href}
   });
 }
 
