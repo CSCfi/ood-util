@@ -82,7 +82,7 @@ module SlurmLimits
     end
   end
 
-  Limit = Struct.new(:name, :time, :mem, :cpu, :gres, :qos) do
+  Limit = Struct.new(:name, :time, :mem, :cpu, :gres, :qos, :max_mem_per_cpu) do
     def initialize(*args)
       super(*args)
       self.mem = self.mem.to_i/1024
@@ -90,6 +90,7 @@ module SlurmLimits
       self.cpu = self.cpu.split(":").map {|v| v.to_i}.inject(:*)
       self.gres = parse_gres_string(self.gres)
       self.qos = get_qos
+      self.max_mem_per_cpu = get_max_mem_per_cpu
     end
 
     def parse_gres_string(gres)
@@ -119,6 +120,19 @@ module SlurmLimits
       qos_name = part_info.fetch("QoS", "N/A")
       # Get MaxTres, MaxTresPA and MaxTresPU for the QoS
       SlurmLimits.qos_limits.fetch(qos_name, {})
+    end
+
+    # Max memory per physical CPU core, in GB. Returns 0 if unlimited.
+    def get_max_mem_per_cpu
+      part_info = SlurmLimits.partitions.fetch(self.name, {})
+      max_per_cpu = part_info.fetch("MaxMemPerCPU", "UNLIMITED")
+
+      max_per_cpu = if max_per_cpu == "UNLIMITED"
+                        0
+                      else
+                        SlurmLimits.convert_mem_to_g(max_per_cpu)
+                      end
+      max_per_cpu
     end
   end
 
@@ -300,10 +314,10 @@ module SlurmLimits
       tres.split(",").filter_map do |r|
         res, value = r.split("=")
         value = if res == "mem"
-          convert_mem_to_g(value)
-        else
-          value.to_i
-        end
+                  convert_mem_to_g(value)
+                else
+                  value.to_i
+                end
         [res, value] unless res == "node" || res == "billing"
       end.to_h
     end

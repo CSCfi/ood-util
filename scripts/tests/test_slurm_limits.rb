@@ -46,7 +46,7 @@ class TestSlurmLimits < Minitest::Test
     assert_equal({}, SlurmLimits.parse_qos_limits(""))
 
     limits = SlurmLimits.parse_qos_limits(@@slurm_output_qos_limits)
-    assert_equal 6, limits.length
+    assert_equal 7, limits.length
 
     interactive = limits["interactive"]
     assert_equal "interactive", interactive[:name]
@@ -65,38 +65,46 @@ class TestSlurmLimits < Minitest::Test
   end
 
   def test_parse_limits
-    assert_equal({}, SlurmLimits.parse_limits(""))
-    limits = SlurmLimits.parse_limits(@@slurm_output_limits)
-    assert_equal 11, limits.length
+    SlurmLimits.stub :query_partitions, @@slurm_output_partitions do
+      SlurmLimits.stub :query_qos_limits, "" do
+        assert_equal({}, SlurmLimits.parse_limits(""))
+        limits = SlurmLimits.parse_limits(@@slurm_output_limits)
+        assert_equal 12, limits.length
 
-    interactive = limits["interactive"]
-    assert_equal "interactive", interactive[:name]
-    assert_equal("7-00:00:00", interactive[:time])
-    assert_equal(373, interactive[:mem])
-    assert_equal(40, interactive[:cpu])
-    assert_equal({}, interactive[:qos])
-    assert_equal(0, interactive["gres/gpu:v100"])
-    assert_equal(3600, interactive["gres/nvme"])
+        interactive = limits["interactive"]
+        assert_equal "interactive", interactive[:name]
+        assert_equal("7-00:00:00", interactive[:time])
+        assert_equal(373, interactive[:mem])
+        assert_equal(40, interactive[:cpu])
+        assert_equal({}, interactive[:qos])
+        assert_equal(0, interactive["gres/gpu:v100"])
+        assert_equal(3600, interactive["gres/nvme"])
 
-    gpu = limits["gpu"]
-    assert_equal 4, gpu["gres/gpu:v100"]
-    assert_equal 3600, gpu["gres/nvme"]
+        interactive_mahti = limits["interactive_mahti"]
+        assert_equal(256, interactive_mahti[:cpu])
+        assert_equal(1875/1024.0, interactive_mahti[:max_mem_per_cpu])
 
-    # Small can be on both IO nodes and non-IO nodes with different limits
-    small = limits["small"]
-    assert_equal 373, gpu[:mem]
-    assert_equal 3600, gpu["gres/nvme"]
+        gpu = limits["gpu"]
+        assert_equal 4, gpu["gres/gpu:v100"]
+        assert_equal 3600, gpu["gres/nvme"]
 
-    test = limits["test"]
-    assert_equal "15:00", test[:time]
+        # Small can be on both IO nodes and non-IO nodes with different limits
+        small = limits["small"]
+        assert_equal 373, gpu[:mem]
+        assert_equal 3600, gpu["gres/nvme"]
 
-    gpu_s = limits["gpusmall"]
-    assert_equal 4, gpu_s["gres/gpu:a100"]
-    assert_equal 3500, gpu_s["gres/nvme"]
+        test = limits["test"]
+        assert_equal "15:00", test[:time]
 
-    gpu_m = limits["gpumedium"]
-    assert_equal 4, gpu_m["gres/gpu:a100"]
-    assert_equal 3500, gpu_s["gres/nvme"]
+        gpu_s = limits["gpusmall"]
+        assert_equal 4, gpu_s["gres/gpu:a100"]
+        assert_equal 3500, gpu_s["gres/nvme"]
+
+        gpu_m = limits["gpumedium"]
+        assert_equal 4, gpu_m["gres/gpu:a100"]
+        assert_equal 3500, gpu_s["gres/nvme"]
+      end
+    end
   end
 
   # Partitions
@@ -108,7 +116,7 @@ class TestSlurmLimits < Minitest::Test
     assert_equal({}, SlurmLimits.parse_partitions(""))
 
     partitions = SlurmLimits.parse_partitions(@@slurm_output_partitions)
-    assert_equal 9, partitions.length
+    assert_equal 10, partitions.length
 
     assert_equal "interactive", partitions["interactive"]["QoS"]
     assert_equal "gputres_accrue", partitions["gpu"]["QoS"]
@@ -179,6 +187,7 @@ hugemem_longrun||||
 accrue_large||||
 interactive|||cpu=8,gres/nvme=720,mem=76G|
 gputres_accrue||gres/gpu:v100=80||
+interactive_mahti|||cpu=64
   EOF
 
   @@slurm_output_limits = <<-EOF
@@ -196,6 +205,7 @@ gpu|3-00:00:00|382000|2:20:1|gpu:v100:4(S:0-1),nvme:3600
 interactive|7-00:00:00|382000|2:20:1|nvme:3600
 gpusmall|1-12:00:00|490000|4:32:2|gpu:a100:4(S:0-1),nvme:3500
 gpumedium|1-12:00:00|490000|4:32:2|gpu:a100:4,nvme:3500
+interactive_mahti|7-00:00:00|240000|8:16:2|(null)
   EOF
 
   @@slurm_output_partitions = <<-EOF
@@ -208,5 +218,6 @@ PartitionName=hugemem_longrun AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL All
 PartitionName=gputest AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL AllocNodes=ALL Default=NO QoS=N/A DefaultTime=00:05:00 DisableRootJobs=YES ExclusiveUser=NO GraceTime=0 Hidden=NO MaxNodes=2 MaxTime=00:15:00 MinNodes=0 LLN=NO MaxCPUsPerNode=UNLIMITED Nodes=r01g01,r02g01 PriorityJobFactor=50 PriorityTier=1 RootOnly=NO ReqResv=NO OverSubscribe=NO OverTimeLimit=NONE PreemptMode=OFF State=UP TotalCPUs=80 TotalNodes=2 SelectTypeParameters=NONE JobDefaults=(null) DefMemPerNode=UNLIMITED MaxMemPerNode=UNLIMITED
 PartitionName=gpu AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL AllocNodes=ALL Default=NO QoS=gputres_accrue DefaultTime=00:10:00 DisableRootJobs=YES ExclusiveUser=NO GraceTime=0 Hidden=NO MaxNodes=20 MaxTime=3-00:00:00 MinNodes=0 LLN=NO MaxCPUsPerNode=UNLIMITED Nodes=r01g[02-08],r02g[02-08],r03g[01-08],r04g[01-08],r13g[01-08],r14g[01-08],r15g[01-08],r16g[01-08],r17g[01-08],r18g[01-08] PriorityJobFactor=10 PriorityTier=1 RootOnly=NO ReqResv=NO OverSubscribe=NO OverTimeLimit=NONE PreemptMode=OFF State=UP TotalCPUs=3120 TotalNodes=78 SelectTypeParameters=NONE JobDefaults=(null) DefMemPerNode=UNLIMITED MaxMemPerNode=UNLIMITED
 PartitionName=interactive AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL AllocNodes=ALL Default=NO QoS=interactive DefaultTime=1-00:00:00 DisableRootJobs=YES ExclusiveUser=NO GraceTime=0 Hidden=NO MaxNodes=1 MaxTime=7-00:00:00 MinNodes=0 LLN=YES MaxCPUsPerNode=UNLIMITED Nodes=r07c[49-52] PriorityJobFactor=50 PriorityTier=1 RootOnly=NO ReqResv=NO OverSubscribe=NO OverTimeLimit=NONE PreemptMode=OFF State=UP TotalCPUs=160 TotalNodes=4 SelectTypeParameters=NONE JobDefaults=(null) DefMemPerNode=UNLIMITED MaxMemPerNode=UNLIMITED
+PartitionName=interactive_mahti AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL AllocNodes=ALL Default=NO QoS=interactive DefaultTime=1-00:00:00 DisableRootJobs=YES ExclusiveUser=NO GraceTime=0 Hidden=NO MaxNodes=1 MaxTime=7-00:00:00 MinNodes=0 LLN=YES MaxCPUsPerNode=UNLIMITED Nodes=c[3101-3104,4101-4104] PriorityJobFactor=50 PriorityTier=1 RootOnly=NO ReqResv=NO OverSubscribe=NO OverTimeLimit=NONE PreemptMode=OFF State=UP TotalCPUs=2048 TotalNodes=8 SelectTypeParameters=NONE JobDefaults=(null) DefMemPerCPU=1875 MaxMemPerCPU=1875 TRES=cpu=2048,mem=1875G,node=8,billing=2048
   EOF
 end
