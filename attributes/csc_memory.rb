@@ -12,8 +12,10 @@ module SmartAttributes
     class CSCMemory < Attribute
 
       def initialize(id, opts = {})
+        # Limit memory based on CPU cores selected
+        max_mem_per_cpu = {:attribute => :csc_cores, :value => :max_mem_per_cpu, :message => "Memory exceeds maximum memory per CPU" }
         # Validate field using mem from csc_slurm_limits
-        opts[:data] = {:max => "mem"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
+        opts[:data] = {:max => "mem", :max_per => [max_mem_per_cpu]}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         opts[:min] ||= 1
         opts[:cacheable] = opts.fetch(:cacheable, false)
         super(id, opts)

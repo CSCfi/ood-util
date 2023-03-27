@@ -17,6 +17,7 @@ module SmartAttributes
         opts[:data] = {:max => "cpu"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         opts[:min] ||= 1
         opts[:cacheable] = opts.fetch(:cacheable, false)
+        opts[:help] ||= '<div id="max_mem_per_cpu_help">The selected partition will allocate <span id="max_mem_per_cpu_amount"></span> of memory per CPU core.</div>'
         super(id, opts)
       end
 
