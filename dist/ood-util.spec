@@ -1,4 +1,5 @@
 %define util_path /var/www/ood/deps/util/
+%define assets_path /var/www/ood/assets/
 
 Name:           ood-util
 Version:        13
@@ -28,9 +29,10 @@ Open on Demand utils
 %__install -m 0755 -d %{buildroot}%{util_path}attributes
 %__install -m 0755 -d %{buildroot}%{util_path}forms
 %__install -m 0755 -d %{buildroot}%{util_path}scripts/tests
+%__install -m 0755 -d %{buildroot}%{assets_path}scripts
 
 %__install -m 0644 -D attributes/*.rb %{buildroot}%{util_path}attributes
-%__install -m 0644 -D forms/*.js      %{buildroot}%{util_path}forms
+%__install -m 0644 -D forms/*.js      %{buildroot}%{assets_path}/scripts/
 %__install -m 0644 -D scripts/*.rb    %{buildroot}%{util_path}scripts
 %__install -m 0644 -D scripts/tests/* %{buildroot}%{util_path}scripts/tests
 %__install -m 0644 form_validation.md README.md LICENSE %{buildroot}%{util_path}/
@@ -38,6 +40,7 @@ Open on Demand utils
 %files
 
 %{util_path}
+%{assets_path}
 
 %changelog
 * Fri Mar 3 2023 Robin Karlsson <robin.karlsson@csc.fi>
