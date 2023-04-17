@@ -11,15 +11,33 @@ const TIME_REGEX = /^(?:(?:(?:(\d+)-)?(\d+):)?(\d+):)?(\d+)$/;
 // Prefix for all form elements used by OOD
 const BC_PREFIX = "batch_connect_session_context";
 
-(function () {
+$(document).ready(function () {
+  setup_form();
+  setup_reset_cache_button();
+});
+
+function setup_form() {
   // Populate slurm_limits object with the limits
   const limits_input = $(`#${BC_PREFIX}_csc_slurm_limits`);
   slurm_limits = limits_input.data("limits") || {};
   slurm_assoc_limits = limits_input.data("assoc-limits") || {};
   const submits = limits_input.data("submits") || [];
   partition_override = limits_input.data("partition") || "";
-  setup_form();
 
+  const form = get_form();
+
+  if (form.length > 0) {
+    $(window).on("load", function () {
+      setTimeout(validate_form, 100);
+    });
+  } else {
+    return;
+  }
+
+  // Disable launch button disabling and validation of form
+  form.attr("novalidate", "")
+  form.find(':submit').removeAttr('data-disable-with');
+  form.submit(handle_submit);
   save_original_limits();
 
   slurm_submits = count_running_resources(submits);
@@ -27,18 +45,6 @@ const BC_PREFIX = "batch_connect_session_context";
   // Register event handlers
   register_event_handlers();
   update_min_max(false);
-})();
-
-$(window).on("load", function () {
-  setTimeout(validate_form, 100);
-});
-
-// Disable launch button disabling and validation of form
-function setup_form() {
-  const form = get_form();
-  form.attr("novalidate", "")
-  form.find(':submit').removeAttr('data-disable-with');
-  form.submit(handle_submit);
 }
 
 // Store original min and max from form.yml to use when slurm limit is not defined
@@ -453,7 +459,7 @@ function show_confirm_modal(title, text, callback, confirmText = "OK", cancelTex
 
 // Reset defaults button
 
-(function () {
+function setup_reset_cache_button() {
   const reset_cache_field = $("#batch_connect_session_context_csc_reset_cache");
   if (reset_cache_field.length == 0) {
     return;
@@ -468,7 +474,7 @@ function show_confirm_modal(title, text, callback, confirmText = "OK", cancelTex
     const cache_file = reset_cache_field.data("app");
     deleteCache(cache_file);
   });
-})();
+}
 
 function deleteCache(cache_file) {
   const csrf_token = $("meta[name=csrf-token]").attr("content");
