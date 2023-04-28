@@ -130,7 +130,7 @@ module SmartAttributes
 
       def get_project_modules
         modules = groups.map do |p|
-          search_path("/projappl/#{p}/www_puhti_modules").map do |name|
+          search_path("/projappl/#{p}/www_#{ENV["CSC_CLUSTER"]}_modules").map do |name|
             [name, name, {"data-project".to_sym => p}]
           end
         end.flatten(1)
@@ -182,7 +182,7 @@ module SmartAttributes
       # Get modules containing "Jupyter" for all projects
       def get_jupyter_projappl_modules
         modules = groups.map do |p|
-          get_jupyter_modules("/projappl/#{p}/www_puhti_modules", project: p)
+          get_jupyter_modules("/projappl/#{p}/www_#{ENV["CSC_CLUSTER"]}_modules", project: p)
         end.flatten(1)
         modules
       end
