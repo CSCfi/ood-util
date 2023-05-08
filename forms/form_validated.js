@@ -11,10 +11,22 @@ const TIME_REGEX = /^(?:(?:(?:(\d+)-)?(\d+):)?(\d+):)?(\d+)$/;
 // Prefix for all form elements used by OOD
 const BC_PREFIX = "batch_connect_session_context";
 
-$(document).ready(function () {
-  setup_form();
-  setup_reset_cache_button();
-});
+// Only setup form once, use DOMContentLoaded as it should fire before the ready event.
+// Use the ready event as fallback as it will always fire while DOMContentLoaded will not fire if
+// event listener was added after DOM was ready.
+
+(function() {
+  let loaded = false;
+  function init() {
+    if (!loaded) {
+      loaded = true;
+      setup_form();
+      setup_reset_cache_button();
+    }
+  }
+  document.addEventListener("DOMContentLoaded", init);
+  $(init);
+})();
 
 function setup_form() {
   // Populate slurm_limits object with the limits
