@@ -228,11 +228,11 @@ function update_input(el) {
     if (max_mem_per_cpu > 0) {
       const cpu_help_amount = cpu_help.find($("#max_mem_per_cpu_amount"));
       cpu_help_amount.text(`${max_mem_per_cpu * 1024}M`)
-      cpu_help.show()
-      group.hide();
+      cpu_help.show();
+      group.children().each(function () {$(this).hide()});
     } else {
       cpu_help.hide();
-      group.show();
+      group.children().each(function () {$(this).show()});
     }
   }
 
