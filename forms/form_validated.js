@@ -219,23 +219,6 @@ function update_input(el) {
 
   const limits = get_current_limits();
 
-  // Hide the csc_memory text element if max_mem_per_cpu is defined and add update memory amount in CPU help text.
-  if (el.attr("id").endsWith("csc_memory")) {
-    const group = el.closest(".form-group");
-    const cpu_help = $("#max_mem_per_cpu_help");
-
-    const max_mem_per_cpu = limits["max_mem_per_cpu"];
-    if (max_mem_per_cpu > 0) {
-      const cpu_help_amount = cpu_help.find($("#max_mem_per_cpu_amount"));
-      cpu_help_amount.text(`${max_mem_per_cpu * 1024}M`)
-      cpu_help.show();
-      group.children().each(function () {$(this).hide()});
-    } else {
-      cpu_help.hide();
-      group.children().each(function () {$(this).show()});
-    }
-  }
-
   if (min != null || customMin != null) {
     let [limit, used, type] = get_limit(limits, min);
     if (customMin != null && (limit == null || parse(customMin) < parse(limit))) {
@@ -268,6 +251,29 @@ function update_input(el) {
       el.attr("max", limit);
       el.data("used", used);
       el.data("limit-type-max", type);
+    }
+    if (limit === 0 && used === 0) {
+      el.val(0);
+      el.closest(".form-group").children().each(function() {$(this).hide()});
+    } else {
+      el.closest(".form-group").children().each(function() {$(this).show()});
+    }
+  }
+
+  // Hide the csc_memory text element if max_mem_per_cpu is defined and add update memory amount in CPU help text.
+  if (el.attr("id").endsWith("csc_memory")) {
+    const group = el.closest(".form-group");
+    const cpu_help = $("#max_mem_per_cpu_help");
+
+    const max_mem_per_cpu = limits["max_mem_per_cpu"];
+    if (max_mem_per_cpu > 0) {
+      const cpu_help_amount = cpu_help.find($("#max_mem_per_cpu_amount"));
+      cpu_help_amount.text(`${max_mem_per_cpu * 1024}M`)
+      cpu_help.show();
+      group.children().each(function () {$(this).hide()});
+    } else {
+      cpu_help.hide();
+      group.children().each(function () {$(this).show()});
     }
   }
 }
