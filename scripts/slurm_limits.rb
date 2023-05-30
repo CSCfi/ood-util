@@ -64,10 +64,12 @@ require 'active_support'
 module SlurmLimits
 
   # Structs for storing the results from slurm
-  Job = Struct.new(:jobid, :acc, :part, :state, :tres) do
+  Job = Struct.new(:jobid, :acc, :part, :state, :cpus, :tres) do
     def initialize(*args)
       super(*args)
       self.tres = SlurmLimits.parse_tres(tres)
+      # Use MinCpus instead of value from tres
+      self.tres["cpu"] = self.cpus.to_i
     end
   end
 
@@ -153,9 +155,10 @@ module SlurmLimits
 
     def query_running
       # e.g.
-      # `12695781|project_2001659|interactive|PD|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
-      # `12695782|project_2001659|interactive|R|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
-      run_command("squeue", "--noheader", "--Format", "JobID:|,Account:|,Partition:|,StateCompact:|,tres-alloc:|", "--user", ENV["USER"])
+      # `12695781|project_2001659|interactive|PD|1|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
+      # `12695782|project_2001659|interactive|R|1|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
+      # tres-alloc gives number of threads, not cores
+      run_command("squeue", "--noheader", "--Format", "JobID:|,Account:|,Partition:|,StateCompact:|,MinCpus:|,tres-alloc:|", "--user", ENV["USER"])
     end
 
     def parse_running(slurm_output)
