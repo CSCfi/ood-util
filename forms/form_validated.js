@@ -189,8 +189,21 @@ function submit_form() {
 function update_min_max(validate = true) {
   const inputs = get_inputs();
   inputs.each((i, inp) => update_input($(inp)));
+  update_gpu_type();
   if (validate) {
     validate_form();
+  }
+}
+
+function update_gpu_type() {
+  const limits = get_current_limits();
+  const gpu_help = $("#partition_gpu_help");
+  const gpu_type_help = $("#partition_gpu_type");
+  if (limits.gpu_types && limits.gpu_types.length > 0) {
+    gpu_type_help.text(limits.gpu_types[0].toUpperCase());
+    gpu_help.show();
+  } else {
+    gpu_help.hide();
   }
 }
 

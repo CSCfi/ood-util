@@ -24,7 +24,7 @@ module SmartAttributes
             submits = SlurmLimits.running
           end
         rescue Exception => e
-          Rails.logger.error("Error getting limits from Slurm: #{e}")
+          Rails.logger.error("Error getting limits from Slurm: #{e}\n#{e.backtrace.join("\n\t")}")
           error = e
         end
         # Allow devs to override the limits from slurm

@@ -14,7 +14,7 @@ module SmartAttributes
       # Extend the default initializer
       def initialize(id, opts = {})
         # Validate field using the gres/gpu:v100 in csc_slurm_limits
-        opts[:data] = {:max => "gres/gpu:v100"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
+        opts[:data] = {:max => opts[:type].nil? ? "gres/gpu" : "gres/gpu:#{opts[:type]}"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         opts[:min] ||= 0
         opts[:cacheable] = opts.fetch(:cacheable, false)
         super(id, opts)
@@ -30,7 +30,7 @@ module SmartAttributes
       # @param fmt [String, nil] formatting of form label
       # @return [String] form label
       def label(fmt: nil)
-        (opts[:label] || "GPUs (V100)").to_s
+        (opts[:label] || opts[:type].nil? ? "GPUs" : "GPUs (#{opts[:type].capitalize})").to_s
       end
 
       def value
