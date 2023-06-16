@@ -84,13 +84,13 @@ module SlurmLimits
     end
   end
 
-  Limit = Struct.new(:name, :time, :mem, :cpu, :gres, :qos, :max_mem_per_cpu) do
+  Limit = Struct.new(:name, :time, :mem, :cpu, :gres, :qos, :max_mem_per_cpu, :gpu_types) do
     def initialize(*args)
       super(*args)
       self.mem = self.mem.to_i/1024
       # cpu is `S:C:T` (sockets:cores:threads), multiply to get max CPU
       self.cpu = self.cpu.split(":").map {|v| v.to_i}.inject(:*)
-      self.gres = parse_gres_string(self.gres)
+      self.gres, self.gpu_types = parse_gres_string(self.gres)
       self.qos = get_qos
       self.max_mem_per_cpu = get_max_mem_per_cpu
     end
@@ -102,6 +102,9 @@ module SlurmLimits
         return {}
       end
       gres_limits = {}
+      # Only one GPU type per partition supported here for now.
+      # TODO: Support multiple GPU types per partition if needed.
+      gpu_types = []
       unless gres == nil
         gres.split(",") do |res|
           if res.start_with?("nvme")
@@ -110,10 +113,11 @@ module SlurmLimits
           elsif res.start_with?("gpu:")
             _, type, amount = res.split(":", 3)
             gres_limits["gres/gpu:#{type}"] = amount.to_i
+            gpu_types.append(type)
           end
         end
       end
-      gres_limits
+      [gres_limits, gpu_types]
     end
 
     def get_qos
@@ -304,7 +308,9 @@ module SlurmLimits
         .deep_merge(new_part){|key,old,new| [old, new].max} }
       max_partition.merge!(max_partition.delete(:gres))
       # If none of the node types specify nvme or gpu the limit is 0
-      max_partition["gres/gpu:v100"] = max_partition.fetch("gres/gpu:v100", 0)
+      max_partition[:gpu_types]&.each do |type|
+        max_partition["gres/gpu:#{type}"] = max_partition.fetch("gres/gpu:#{type}", 0)
+      end
       max_partition["gres/nvme"] = max_partition.fetch("gres/nvme", 0)
       max_partition
     end
