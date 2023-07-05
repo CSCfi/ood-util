@@ -84,14 +84,27 @@ module SlurmLimits
     end
   end
 
-  Limit = Struct.new(:name, :time, :mem, :cpu, :gres, :qos, :max_mem_per_cpu, :gpu_types) do
+  Limit = Struct.new(:name, :time, :mem, :cpu, :gres, :qos, :max_mem_per_cpu, :gpu_types, :threads_per_core) do
     def initialize(*args)
       super(*args)
       self.mem = self.mem.to_i/1024
       # cpu is `S:C:T` (sockets:cores:threads), multiply to get max CPU
-      self.cpu = self.cpu.split(":").map {|v| v.to_i}.inject(:*)
+      # Count only actual cores as that is what is used when submitting in OOD.
+      s, c, t = self.cpu.split(":").map(&:to_i)
+      self.cpu = s * c
+      self.threads_per_core = t
       self.gres, self.gpu_types = parse_gres_string(self.gres)
       self.qos = get_qos
+      if t > 1
+        for qos_type in [:maxtres, :maxtrespa, :maxtrespu]
+          cpus = self.qos.dig(qos_type, "cpu")
+          if !cpus.nil?
+            # Jobs receive t times as many cpus as requested through the form, divide QOS limit too.
+            # This way the limit on the form matches the CSC user guide.
+            self.qos[qos_type]["cpu"] /= t
+          end
+        end
+      end
       self.max_mem_per_cpu = get_max_mem_per_cpu
     end
 
