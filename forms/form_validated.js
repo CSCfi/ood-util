@@ -410,6 +410,10 @@ function validate_input(el) {
     return;
   }
 
+  if (el.is(":hidden")) {
+    return;
+  }
+
   // Values as strings, keep as is for formatting output
   const min = el.attr("min");
   const max = el.attr("max");
