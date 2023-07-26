@@ -1,7 +1,9 @@
 # Form validation
 
-The form validation is done by getting the Slurm limits when the app form is rendered, pass the limits in a hidden field in the form.
+The form validation is done by getting the Slurm limits when the app form is rendered. Limits are then passed in a hidden field in the form.
 The hidden field contents is then parsed as JSON and then used to validate the form using the HTML5 custom validation features.
+Form validation is intended to be as generic as possible and work on any the systems (Puhti, Mahti, LUMI) without needing to implement separate logic for each of them.
+The biggest differences between the systems are regarding SMT, MaxMemPerCPU and TRES availability (NVME+GPU).
 
 ## Expected behaviour
 
@@ -26,6 +28,12 @@ If the *maxtrespu* with the user's used resources subtracted is lower than the n
 
 *maxtres* and *maxtrespa* (per account (project)) are not in practice used/relevant for the form validation, but are still supported by the form validation.
 We treat *maxtrespa* in the same way as *maxtrespu* (I'm unsure if we should include other users' used resources in *maxtrespa*).
+
+#### MaxMemPerCPU
+
+LUMI and Mahti have MaxMemPerCPU set for some partitions.
+The value is parsed and included in the data passed to the form, with dynamically updating help text letting the user know that the amount of memory depends on the amount of CPUs they choose.
+The actual submission logic for MaxMemPerCPU needs to be handled in `submit.yml.erb`.
 
 ### Limits defined in the form
 
@@ -65,7 +73,7 @@ The following commands are used by SlurmLimits for getting the limits from Slurm
 sinfo --noheader --Format "PartitionName:|,Time:|,Memory:|,SocketCoreThread:|,Gres:"
 
 # sacctmgr show qos gives the qos limits, in this case only the interactive partition limits are relevant
-sacctmgr --noheader -p show qos format=Name,MaxTres,MaxTresPA,MaxTresPU
+sacctmgr --noheader --parsable2 show qos format=Name,MaxTres,MaxTresPA,MaxTresPU
 
 # get the name of the qos used for each partition
 scontrol show partition --oneliner
@@ -75,10 +83,10 @@ scontrol show partition --oneliner
 
 # sacctmgr show assoc gives the max submits for each partition and project
 # only MaxSubmits is used currently to allow the user to queue up jobs even if they won't run immediately
-sacctmgr --noheader -p show assoc format=Partition,Account,MaxJobs,MaxSubmit where user=$USER
+sacctmgr --noheader --parsable2 show assoc format=Partition,Account,MaxJobs,MaxSubmit where user=$USER
 
 # get the amount of submissions the user has for each partition and project
-squeue --noheader --format "%i|%a|%P|%t" --user $USER
+squeue --noheader --Format "JobID:|,Account:|,Partition:|,StateCompact:|,MinCpus:|,tres-alloc:|" --user $USER
 ```
 
 #### Resource limits
