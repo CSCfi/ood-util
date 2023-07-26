@@ -9,7 +9,7 @@ SlurmLimits.limits
 {
   "small": {
     "name": "small", "time": "3-00:00:00", "mem": 373, "cpu": 40, "qos": {},
-      "gres/nvme": 3600, "gres/gpu:v100": 0
+    "max_mem_per_cpu": 0, "gpu_types": null, "threads_per_core": 2, "gres/nvme": 3600
   },
   "interactive": {
     "name": "interactive", "time": "7-00:00:00", "mem": 373, "cpu": 40,
@@ -19,7 +19,12 @@ SlurmLimits.limits
         "cpu": 8, "gres/nvme": 720, "mem": 76.0
       }
     },
-    "gres/nvme": 3600, "gres/gpu:v100": 0
+    "max_mem_per_cpu": 1.8310546875, "gpu_types": null, "threads_per_core": 2, "gres/nvme": 3600
+  },
+  "gputest": {
+    "name": "gputest", "time": "15:00", "mem": 478, "cpu": 128, "qos": {},
+    "max_mem_per_cpu": 0, "gpu_types": [ "a100" ], "threads_per_core": 2,
+    "gres/gpu:a100": 4, "gres/nvme": 3500
   }
 }
 
