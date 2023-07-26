@@ -35,8 +35,9 @@ module SmartAttributes
           # Filter out values provided in the ignore attribute on csc_slurm_partition
           partitions.select {|partition, projects| !opts[:ignore].include?(partition) }
         elsif !opts[:select].nil?
+          selected = opts[:select].map { |sel| sel.is_a?(Array) ? sel.first : sel }
           # Only include values provided in the select attribute on csc_slurm_partition
-          partitions.select {|partition, projects| opts[:select].include?(partition) }
+          partitions.select { |partition, projects| selected.include?(partition) }
         else
           partitions
         end
@@ -58,7 +59,11 @@ module SmartAttributes
       end
 
       def select_choices
-        get_partitions.map { |partition, project_data| [partition, *project_data]}
+        get_partitions.map do |partition, project_data|
+          # Partition may have extra data included in form.yml, e.g. ["interactive", data-hide-somefield: true]
+          partition_data = opts[:select].find { |sel| sel.is_a?(Array) && sel.first == partition }&.drop(1)
+          [partition, *project_data, *partition_data]
+        end
       end
 
       # Submission hash describing how to submit this attribute
