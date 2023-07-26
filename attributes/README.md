@@ -22,13 +22,12 @@ The following smart attributes can be used:
 - csc_slurm_limits
 - csc_slurm_partition
 - csc_slurm_project
+- csc_slurm_reservation
 - csc_time
 
 Example `form.yml.erb` that uses some smart attributes:
 ```yml
 # form.yml.erb
-cluster: "puhti"
-
 form:
   - csc_slurm_project
   - csc_slurm_partition
@@ -36,12 +35,13 @@ form:
 ```
 The above form allows the user to select project and partitions from a list that is fetched from Slurm and allows the user to select the amount of CPU cores for the job.
 
-### csc_slurm_partition/project
-Use these to get the available projects and partitions that the user can submit a job for.
+### csc_slurm_partition/project/reservation
+Use these to get the available projects, partitions and reservations that the user can submit a job for.
 These are automatically submitted to Slurm.
 
 The partitions available can be filtered by adding `select` or `ignore` to `csc_slurm_partition`.
 Select selects the defined partitions from the list of available partitions to the user.
+The select option can also be an array consisting of the partition name and dynamic JS data attributes.
 Ignore selects all available partitions except the ones provided in the ignore field.
 
 Example:
@@ -52,14 +52,14 @@ attributes:
     value: "interactive"
     select:
       - "interactive"
-      - "small"
+      - ["small", data-show-python-module: false]
       - "test"
 
 form:
   - csc_slurm_partition
 ```
 
-A partition that can't be changed by the user but submitted is to Slurm can be defined as
+A partition that can't be changed by the user but is submitted to Slurm can be defined as
 ```yml
 # form.yml.erb
 attributes:
@@ -104,49 +104,39 @@ form:
   - csc_slurm_reservation
 ```
 
-### csc_cores/memory/nvme/time/gpu
-Various elements for letting the user select CPUs, memory, NVME size, time and GPUs for the job.
+### csc_cores/memory/nvme/time
+Various elements for letting the user select CPUs, memory, NVME size and time for the job.
 These values are not automatically submitted to Slurm so `submit.yml.erb` must be modified.
 
-Example `submit.yml.erb` for apps that don't use GPUs:
+Example `submit.yml.erb`:
 ```yml
 # submit.yml.erb
-batch_connect:
-  template: "basic"
+cluster: "<%= ENV["CSC_CLUSTER"] -%>"
 
-script:
-  native:
-    - '-c'
-    - '<%= csc_cores %>'
-    - '-t'
-    - '<%= csc_time %>'
-    - '--mem=<%= csc_memory %>G'
-      <% if csc_nvme.to_i > 0 %>
-      - '--gres=nvme:<%= csc_nvme -%>'
-      <% end %>
-```
+# Calculate memory to request when partition has MaxMemPerCPU set.
+<% max_mem_per_cpu = SlurmLimits.limits.fetch(csc_slurm_partition, {}).fetch(:max_mem_per_cpu, 0).to_f %>
+<% mem = (max_mem_per_cpu * 1024 * csc_cores.to_i).to_i %>
 
-If the app needs GPU support, use the following `submit.yml.erb`:
-```yml
-# submit.yml.erb
-# To allow more than 1 GPU, `n_gpus` could be set to `csc_gpu.to_i` here if the `csc_gpu` smart attribute is used
-<% n_gpus = csc_slurm_partition == "gpu" || csc_slurm_partition == "gputest"  ? 1 : 0 %>
+# Request 1 GPU if partition has GPUs.
+<% n_gpus = 1 %>
+<% gpu_type = SlurmLimits.limits&.fetch(csc_slurm_partition, nil)&.fetch(:gpu_types)&.first %>
 <% gres = [] %>
 <% gres.push("nvme:#{csc_nvme}") if csc_nvme.to_i > 0 %>
-<% gres.push("gpu:v100:#{n_gpus}") if n_gpus > 0 %>
+<% gres.push("gpu:#{gpu_type}:#{n_gpus}") if gpu_type && n_gpus > 0 %>
 
 batch_connect:
   template: "basic"
-
 script:
-  # accounting_id: '<%# csc_slurm_account %>'
-  # queue_name: '<%# csc_slurm_partition %>'
   native:
       - '-c'
       - '<%= csc_cores  %>'
       - '-t'
       - '<%= csc_time %>'
-      - '--mem=<%= csc_memory %>G'
+      <% if max_mem_per_cpu > 0 %>
+      - '--mem=<%= mem -%>M'
+      <% else %>
+      - '--mem=<%= csc_memory -%>G'
+      <% end %>
       <% unless gres.empty? %>
       - '--gres=<%= gres.join(",") -%>'
       <% end %>
@@ -173,7 +163,7 @@ form:
 ```
 
 ### csc_reset_cache
-When used with the form validation Javascript it adds a button below the launch button that can be used to reset the form contents to default, "resets the cache".
+The csc_reset_cache smart attribute adds a button below the launch button that can be used to reset the form contents to default, "resets the cache".
 Usage:
 ```yml
 # form.yml.erb
@@ -186,19 +176,16 @@ form:
 Where `sys/ood-myapp` is the name the app is deployed as.
 
 ## Interactive app form validation
-The errors that Slurm gives when an user tries to submit a job with for example higher time limit than the partition allows can be quite confusing.
-To improve the user experience the form can be validated clientside before sending it.
-Note that the clientside form validation does not prevent the user from submitting the form with values outside the allowed values.
+The errors that Slurm gives when an user tries to submit a job with, for example, higher time limit than the partition allows can be quite confusing.
+To improve the user experience the form can be validated client-side before sending it.
+Note that the client-side form validation does not prevent the user from submitting the form with values outside the allowed values.
 If that needs to be prevented it must be done for example in `submit.yml.erb`
 
 ### Setup
-`/ood/deps/util/forms/form_validated.js` must be linked or copied to the app root folder as `form.js`. This can be done by adding `ln -fns ../../../deps/util/forms/form_validated.js form.js` to `ood_install.sh`.
 
 Basic usage:
 ```yml
 # form.yml.erb
-cluster: "puhti"
-
 form:
   - csc_slurm_project
   - csc_slurm_partition
@@ -214,8 +201,6 @@ The above form will create a form containing inputs for project, partition, time
 Advanced usage:
 ```yml
 # form.yml.erb
-cluster: "puhti"
-
 attributes:
   csc_cores:
     value: 1 # Default/initial value
