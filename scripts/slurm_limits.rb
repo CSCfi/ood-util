@@ -64,7 +64,7 @@ require 'active_support'
 module SlurmLimits
 
   # Structs for storing the results from slurm
-  Job = Struct.new(:jobid, :acc, :part, :state, :cpus, :tres) do
+  Job = Struct.new(:jobid, :acc, :part, :state, :cpus, :name, :tres) do
     def initialize(*args)
       super(*args)
       self.tres = SlurmLimits.parse_tres(tres)
@@ -149,20 +149,22 @@ module SlurmLimits
     # Get the current amount of submits for an user per partition and project
     # returns an Array of running jobs, eg. [{"jobid" => "123456", "acc" => "project_123456", "part" => "interactive", "state" => "R", "tres" => {"cpu" => 2, "mem" => 2, "gres/nvme" => 32}, ... ]
     def running
-      slurm_output = query_running
-      parse_running(slurm_output)
+      Rails.cache.fetch("csc_running_jobs", expires_in: 10.seconds) do
+        slurm_output = query_running
+        parse_running(slurm_output)
+      end
     end
 
     def query_running
       # e.g.
-      # `12695781|project_2001659|interactive|PD|1|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
-      # `12695782|project_2001659|interactive|R|1|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
+      # `12695781|project_2001659|interactive|PD|1|sys/dashboard/sys/ood-base-jupyter|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
+      # `12695782|project_2001659|interactive|R|1|sys/dashboard/sys/ood-base-jupyter|cpu=1,mem=2G,node=1,billing=1,gres/nvme=4|`
       # tres-alloc gives number of threads, not cores
-      run_command("squeue", "--noheader", "--Format", "JobID:|,Account:|,Partition:|,StateCompact:|,MinCpus:|,tres-alloc:|", "--user", ENV["USER"])
+      run_command("squeue", "--noheader", "--Format", "JobID:|,Account:|,Partition:|,StateCompact:|,MinCpus:|,Name:|,tres-alloc:|", "--user", ENV["USER"])
     end
 
     def parse_running(slurm_output)
-      parse(slurm_output, Job, "|", 4)
+      parse(slurm_output, Job, "|", 6)
     end
 
 
