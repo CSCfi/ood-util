@@ -149,10 +149,8 @@ module SlurmLimits
     # Get the current amount of submits for an user per partition and project
     # returns an Array of running jobs, eg. [{"jobid" => "123456", "acc" => "project_123456", "part" => "interactive", "state" => "R", "tres" => {"cpu" => 2, "mem" => 2, "gres/nvme" => 32}, ... ]
     def running
-      Rails.cache.fetch("csc_running_jobs", expires_in: 10.seconds) do
-        slurm_output = query_running
-        parse_running(slurm_output)
-      end
+      slurm_output = query_running
+      parse_running(slurm_output)
     end
 
     def query_running
