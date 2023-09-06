@@ -17,7 +17,14 @@ module SmartAttributes
         opts[:data] = {:max => "cpu"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         opts[:min] ||= 1
         opts[:cacheable] = opts.fetch(:cacheable, false)
-        opts[:help] ||= '<div id="max_mem_per_cpu_help">The selected partition will allocate <span id="max_mem_per_cpu_amount"></span> of memory per CPU core.</div>'
+        opts[:help] ||= <<EOF
+<div id="cpu_smt_help" style="display: none;">
+  SMT is enabled for the selected partition. <span id="threads_per_core">1</span> threads per core will be allocated.
+</div>
+<div id="max_mem_per_cpu_help" style="display: none;">
+  The selected partition will allocate <span id="max_mem_per_cpu_amount"></span> of memory per CPU core.
+</div>
+EOF
         super(id, opts)
       end
 

@@ -281,19 +281,34 @@ function update_input(el) {
   // Hide the csc_memory text element if max_mem_per_cpu is defined and add update memory amount in CPU help text.
   if (el.attr("id").endsWith("csc_memory")) {
     const group = el.closest(".form-group");
-    const cpu_help = $("#max_mem_per_cpu_help");
+    const max_mem_cpu_help = $("#max_mem_per_cpu_help");
 
     const max_mem_per_cpu = limits["max_mem_per_cpu"];
     if (max_mem_per_cpu > 0) {
-      const cpu_help_amount = cpu_help.find($("#max_mem_per_cpu_amount"));
-      cpu_help_amount.text(`${max_mem_per_cpu * 1024}M`)
-      cpu_help.show();
+      const max_mem_cpu_help_amount = max_mem_cpu_help.find($("#max_mem_per_cpu_amount"));
+      max_mem_cpu_help_amount.text(`${max_mem_per_cpu * 1024}M`)
+      max_mem_cpu_help.show();
       group.children().each(function () {$(this).hide()});
     } else {
-      cpu_help.hide();
+      max_mem_cpu_help.hide();
       group.children().each(function () {$(this).show()});
     }
+  } else if (el.attr("id").endsWith("csc_cores")) {
+    update_smt_help(limits);
   }
+}
+
+function update_smt_help(limits) {
+    const cpu_smt_help = $("#cpu_smt_help");
+
+    const threads_per_core = limits["threads_per_core"];
+    if (threads_per_core > 1) {
+      cpu_smt_help.find("#threads_per_core").text(threads_per_core);
+      cpu_smt_help.show();
+    } else {
+      cpu_smt_help.hide();
+    }
+
 }
 
 function get_limit(limits, name) {
