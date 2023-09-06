@@ -198,9 +198,14 @@ function update_min_max(validate = true) {
 function update_gpu_type() {
   const limits = get_current_limits();
   const gpu_help = $("#partition_gpu_help");
+  const gpu_name_help = $("#partition_gpu_name");
   const gpu_type_help = $("#partition_gpu_type");
   if (limits.gpu_types && limits.gpu_types.length > 0) {
-    gpu_type_help.text(limits.gpu_types[0].toUpperCase());
+    const gpu_name = limits.gpu_types[0].toUpperCase();
+    const gpu_type = gpu_name === "MI250" ? "GCD" : "GPU";
+    gpu_name_help.text(gpu_name);
+    gpu_type_help.text(gpu_type);
+
     gpu_help.show();
   } else {
     gpu_help.hide();
