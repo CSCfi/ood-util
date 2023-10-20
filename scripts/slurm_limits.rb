@@ -117,7 +117,7 @@ module SlurmLimits
       # gres is either null or a comma separated list
       # e.g. `gpu:v100:4(S:0-1),nvme:3600`
       if gres == "(null)"
-        return {}
+        return {}, []
       end
       gres_limits = {}
       # Only one GPU type per partition supported here for now.
