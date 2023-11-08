@@ -33,7 +33,13 @@ module SmartAttributes
       end
 
       def value
-        (opts[:value] || "0").to_s
+        #(opts[:value] || "0").to_s
+        "0" # Force 0 until LUMI-D NVME works
+      end
+
+      # Hide for all apps until LUMI-D NVME works
+      def fixed?
+        true
       end
 
       # Submission hash describing how to submit this attribute
