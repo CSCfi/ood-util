@@ -73,17 +73,39 @@ module SmartAttributes
         # Hide the partition field in form if this reservation defines a partition
         extra_opts = nil
         if reservation.partition_name != "(null)"
-          extra_opts = [{"data-hide-csc-slurm-partition": true}]
+          extra_opts = [{ "data-hide-csc-slurm-partition": true }]
         end
-        inactive = reservation.state == "INACTIVE"
-        ["#{reservation.name}#{" (inactive)" if inactive}", reservation.name, {"data-partition": reservation.partition_name}, *extra_opts]
+        inactive_text = if Time.now < reservation.start_time
+            " (active from #{reservation.start_time.strftime("%Y-%m-%d %H:%M %Z")})"
+          elsif Time.now > reservation.end_time
+            " (expired)"
+          elsif reservation.state == "INACTIVE"
+            " (inactive)"
+          else
+            ""
+          end
+        ["#{reservation.name}#{inactive_text}", reservation.name, { "data-partition": reservation.partition_name, "disabled": ("true" unless inactive_text.empty?) }, *extra_opts]
       end
 
       # Filter the available reservations based on the allowed partitions for this app
       def select_choices
-        Rails.cache.fetch("slurm_reservations", expires_in: 10.minutes) do
-          [["No reservation", "", {"data-partition": "(null)"}]].concat(reservations.map { |res| select_choice(res) } )
+        cache_expiry = nil #Time.now + 10.minutes
+        result = Rails.cache.fetch("slurm_reservations", expires_in: 10.minutes) do
+          [["No reservation", "", { "data-partition": "(null)" }]]
+            .concat(reservations.map { |res|
+              if res.start_time > Time.now && (cache_expiry.nil? || res.start_time < cache_expiry)
+                cache_expiry = res.start_time
+              end
+              if res.end_time > Time.now && (cache_expiry.nil? || res.end_time < cache_expiry)
+                cache_expiry = res.end_time
+              end
+              select_choice(res)
+            })
         end
+        if cache_expiry != nil
+          Rails.cache.write("slurm_reservations", result, expires_in: [cache_expiry - Time.now + 1.second, 10.minutes].min)
+        end
+        result
       end
 
       # Submission hash describing how to submit this attribute
