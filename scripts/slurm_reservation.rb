@@ -2,7 +2,7 @@ require "open3"
 
 module SlurmReservation
 
-  Reservation = Struct.new(:name, :nodes, :partition_name, :users, :groups, :flags, :accounts, :state) do
+  Reservation = Struct.new(:name, :nodes, :partition_name, :users, :groups, :flags, :accounts, :state, :start_time, :end_time) do
     def can_use(user, user_groups)
       if !users.empty? && !users.include?(user)
         return false
@@ -49,7 +49,9 @@ module SlurmReservation
       flags = parse_scontrol_arr(res[:Flags])
       groups = parse_scontrol_arr(res[:Groups])
       accounts = parse_scontrol_arr(res[:Accounts])
-      Reservation.new(res[:ReservationName], nodes, res[:PartitionName], users, groups, flags, accounts, res[:State])
+      start_time = Time.parse(res[:StartTime])
+      end_time = Time.parse(res[:EndTime])
+      Reservation.new(res[:ReservationName], nodes, res[:PartitionName], users, groups, flags, accounts, res[:State], start_time, end_time)
     end
 
     # Parses comma separated values from scontrol show into an array, empty if "(null)"
