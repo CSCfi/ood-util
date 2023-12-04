@@ -70,10 +70,9 @@ function save_original_limits() {
 
 // Validate inputs and check submits on form changes
 function register_event_handlers() {
-  const part_input = get_partition_input();
-  part_input.change(part_proj_change);
-  const project_input = get_project_input();
-  project_input.change(part_proj_change);
+  get_partition_input().change(part_proj_change);
+  get_project_input().change(part_proj_change);
+  get_reservation_input().change(part_proj_change);
 
   const elements = get_inputs();
   elements.each((i, el) => {
@@ -143,6 +142,10 @@ function get_project_input() {
   return $(`#${BC_PREFIX}_csc_slurm_project`);
 }
 
+function get_reservation_input() {
+  return $(`#${BC_PREFIX}_csc_slurm_reservation`);
+}
+
 // Get the limits for the currently selected partition
 function get_current_limits() {
   const part = get_partition();
@@ -156,7 +159,9 @@ function get_partition() {
   }
   const part_input = get_partition_input();
   const part = part_input.val();
-  return part;
+  const res_input = get_reservation_input();
+  const res_part = res_input.find(":selected").data("partition");
+  return res_input.is(":visible") && (res_part == null || res_part =="(null)") ? part : res_part;
 }
 
 function get_project() {

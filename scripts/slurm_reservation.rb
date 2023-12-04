@@ -4,9 +4,6 @@ module SlurmReservation
 
   Reservation = Struct.new(:name, :nodes, :partition_name, :users, :groups, :flags, :accounts, :state) do
     def can_use(user, user_groups)
-      if state != "ACTIVE"
-        return false
-      end
       if !users.empty? && !users.include?(user)
         return false
       end
@@ -90,6 +87,14 @@ module SlurmReservation
     def reservations(user=ENV["USER"])
       @reservations_cache ||= {}
       @reservations_cache[user] ||= available_reservations(query_slurm, user)
+    end
+
+    # Used in submit.yml.erb files to determine which partition to really use.
+    def partition_to_use(reservation, partition)
+      # User selected reservation => use partition from reservation.
+      # User selected partition or reservation has no partition => use user selected partition.
+      res = reservations.find { |r| r.name == reservation }
+      res.nil? || res.partition_name == "(null)" ? partition : res.partition_name
     end
 
     # List of groups the user belongs to
