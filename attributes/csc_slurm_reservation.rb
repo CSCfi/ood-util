@@ -73,21 +73,17 @@ module SmartAttributes
         # Hide the partition field in form if this reservation defines a partition
         extra_opts = nil
         if reservation.partition_name != "(null)"
-          extra_opts = [{"data-hide-csc-slurm-partition": true}, {"data-set-csc-slurm-partition": reservation.partition_name}]
+          extra_opts = [{"data-hide-csc-slurm-partition": true}]
         end
-        [reservation.name, reservation.name, {"data-partition": reservation.partition_name}, *extra_opts]
-      end
-
-      # Cache an unfiltered list of the options
-      # Filtering needs to be done for each app
-      def select_choices_unfiltered
-        # Always have an option for no reservation
-        @@select_choices_unfiltered ||= [["No reservation", "", {"data-partition": "(null)"}]].concat(reservations.map { |res| select_choice(res) } )
+        inactive = reservation.state == "INACTIVE"
+        ["#{reservation.name}#{" (inactive)" if inactive}", reservation.name, {"data-partition": reservation.partition_name}, *extra_opts]
       end
 
       # Filter the available reservations based on the allowed partitions for this app
       def select_choices
-        select_choices_unfiltered.filter { |choice| allowed_partition(choice[2][:"data-partition"])}
+        Rails.cache.fetch("slurm_reservations", expires_in: 10.minutes) do
+          [["No reservation", "", {"data-partition": "(null)"}]].concat(reservations.map { |res| select_choice(res) } )
+        end
       end
 
       # Submission hash describing how to submit this attribute
