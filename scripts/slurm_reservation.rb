@@ -17,6 +17,10 @@ module SlurmReservation
       end
       return true
     end
+
+    def partitions
+      @partitions ||= SlurmReservation.node_partitions(self.nodes)
+    end
   end
 
   class << self
@@ -32,6 +36,18 @@ module SlurmReservation
       run_command("scontrol", "show", "--oneliner", "reservation")
     end
 
+    # Gets the list of partitions for a set of nodes
+    def node_partitions(node_str)
+      output = run_command("scontrol", "show", "--oneliner", "node", node_str)
+      nodes = parse_scontrol_show(output)
+      nodes.map { |node|
+        parse_scontrol_arr(node[:Partitions])
+      }.flatten.uniq
+    rescue => e
+      Rails.logger.error("Error getting partitions for nodes #{node_str}: #{e}")
+      []
+    end
+
     # Parses the output from scontrol show reservation
     # Returns a list of Reservation
     def parse_reservations(slurm_output)
@@ -44,14 +60,13 @@ module SlurmReservation
 
     # Parses a single line of scontrol show (in the format of a hash) and returns a Reservation struct from that, with array values parsed
     def parse_reservation(res)
-      nodes = parse_scontrol_arr(res[:Nodes])
       users = parse_scontrol_arr(res[:Users])
       flags = parse_scontrol_arr(res[:Flags])
       groups = parse_scontrol_arr(res[:Groups])
       accounts = parse_scontrol_arr(res[:Accounts])
       start_time = Time.parse(res[:StartTime])
       end_time = Time.parse(res[:EndTime])
-      Reservation.new(res[:ReservationName], nodes, res[:PartitionName], users, groups, flags, accounts, res[:State], start_time, end_time)
+      Reservation.new(res[:ReservationName], res[:Nodes], res[:PartitionName], users, groups, flags, accounts, res[:State], start_time, end_time)
     end
 
     # Parses comma separated values from scontrol show into an array, empty if "(null)"
@@ -86,9 +101,11 @@ module SlurmReservation
 
     # Fetches the reservations from slurm, parses them and filters them
     # Example: [#<struct SlurmReservation::Reservation name="test", nodes=["r07c[01-06]"], partition_name="test", users=["robinkar"], groups=[], flags=["MAINT", "SPEC_NODES", "PART_NODES"], accounts=[], state="ACTIVE">]
-    def reservations(user=ENV["USER"])
-      @reservations_cache ||= {}
-      @reservations_cache[user] ||= available_reservations(query_slurm, user)
+    def reservations(user = ENV["USER"])
+      # Short cache just to avoid querying multiple times per pageload
+      Rails.cache.fetch("reservations_#{user}", expires_in: 20.seconds) do
+        available_reservations(query_slurm, user)
+      end
     end
 
     # Used in submit.yml.erb files to determine which partition to really use.
