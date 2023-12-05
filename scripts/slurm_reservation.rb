@@ -99,6 +99,33 @@ module SlurmReservation
       res.nil? || res.partition_name == "(null)" ? partition : res.partition_name
     end
 
+    # Output the maximum run time possible for the reservation for sbatch --time parameter.
+    # Fallback to user defined time if no reservation or any parsing fails.
+    def max_time(reservation, user_defined_time)
+      return user_defined_time if reservation.blank?
+
+      margin = 20.minutes
+      res = reservations.find { |r| r.name == reservation }
+      end_time = res&.end_time
+      # Use user defined time if job is started within last 20 minutes of queueing.
+      return user_defined_time if end_time.nil? || Time.now > end_time - margin
+
+      # Parse e.g. 1-23:34:45 (%d-%H:%M:%S)
+      re = /^(?:(?:(?:(\d+)-)?(\d+):)?(\d+):)?(\d+)$/
+      m = re.match(user_defined_time)
+      requested_seconds = m[1].to_i.days + m[2].to_i.hours + m[3].to_i.minutes + m[4].to_i
+      return user_defined_time if Time.now + requested_seconds < end_time
+
+      # 20 minute margin to allow time for queueing.
+      max_seconds = (end_time - margin - Time.now).to_i
+      days = (max_seconds/86400).to_i
+      formatted_time = Time.at(max_seconds).utc.strftime("#{days}-%H:%M:%S")
+      return formatted_time
+    rescue => e
+      Rails.logger.error("Error getting max time for job: #{e}")
+      user_defined_time
+    end
+
     # List of groups the user belongs to
     # Example: ["robinkar", "ood_installation", "project_1235678"]
     def user_groups(user)
