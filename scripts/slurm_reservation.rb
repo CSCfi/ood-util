@@ -102,10 +102,23 @@ module SlurmReservation
     # Fetches the reservations from slurm, parses them and filters them
     # Example: [#<struct SlurmReservation::Reservation name="test", nodes=["r07c[01-06]"], partition_name="test", users=["robinkar"], groups=[], flags=["MAINT", "SPEC_NODES", "PART_NODES"], accounts=[], state="ACTIVE">]
     def reservations(user = ENV["USER"])
-      # Short cache just to avoid querying multiple times per pageload
-      Rails.cache.fetch("reservations_#{user}", expires_in: 20.seconds) do
-        available_reservations(query_slurm, user)
+      cache_expiry = nil
+      result = Rails.cache.fetch("slurm_reservations_#{user}", expires_in: 10.minutes) do
+        avail_reservations = available_reservations(query_slurm, user)
+        avail_reservations.each { |res|
+          if res.start_time > Time.now && (cache_expiry.nil? || res.start_time < cache_expiry)
+            cache_expiry = res.start_time
+          end
+          if res.end_time > Time.now && (cache_expiry.nil? || res.end_time < cache_expiry)
+            cache_expiry = res.end_time
+          end
+        }
       end
+      # Update expiry time of cache to be after the next start or end of a reservation
+      if cache_expiry != nil
+        Rails.cache.write("slurm_reservations_#{user}", result, expires_in: [cache_expiry - Time.now + 1.second, 10.minutes].min)
+      end
+      result
     end
 
     # Used in submit.yml.erb files to determine which partition to really use.
