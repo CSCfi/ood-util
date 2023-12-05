@@ -46,7 +46,7 @@ module SmartAttributes
 
       # Cache the reservations from Slurm
       def reservations
-        @reservations ||= SlurmReservation.reservations
+        @reservations = SlurmReservation.reservations
       end
 
       # Form label for this attribute
@@ -97,25 +97,10 @@ module SmartAttributes
 
       # Filter the available reservations based on the allowed partitions for this app
       def select_choices
-        cache_expiry = nil #Time.now + 10.minutes
-        result = Rails.cache.fetch("slurm_reservations", expires_in: 10.minutes) do
-          # Fetch reservations again
-          @reservations = SlurmReservation.reservations
-          [["No reservation", "none", { "data-partition": "(null)" }]]
-            .concat(reservations.map { |res|
-              if res.start_time > Time.now && (cache_expiry.nil? || res.start_time < cache_expiry)
-                cache_expiry = res.start_time
-              end
-              if res.end_time > Time.now && (cache_expiry.nil? || res.end_time < cache_expiry)
-                cache_expiry = res.end_time
-              end
-              select_choice(res)
-            })
-        end
-        if cache_expiry != nil
-          Rails.cache.write("slurm_reservations", result, expires_in: [cache_expiry - Time.now + 1.second, 10.minutes].min)
-        end
-        result
+        [["No reservation", "none", { "data-partition": "(null)" }]]
+          .concat(reservations.map { |res|
+            select_choice(res)
+          })
       end
 
       # Submission hash describing how to submit this attribute
