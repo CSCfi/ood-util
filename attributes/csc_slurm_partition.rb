@@ -59,11 +59,32 @@ module SmartAttributes
       end
 
       def select_choices
-        get_partitions.map do |partition, project_data|
+        filtered_partitions = get_partitions
+
+        res_names = SlurmReservation.reservations.map(&:name)
+
+        # Partition choices only availible in specific reservations
+        res_partitions = SlurmReservation.reservations
+          .map { |r|
+            r.partitions
+              .filter { |part| !filtered_partitions.keys.include?(part) } # Skip partitions available outside of reservations
+              .map { |p| [p, [r.name]] }.to_h # Map to format {"<partition>": ["<reservation>"]}
+          }.reduce({}) { |result, res_part| # Reduce to {"<partition>": ["<reservation1>", "<reservation2>"]}
+            result.merge(res_part) { |part, old_res_list, new_res_list| old_res_list.concat(new_res_list) }
+          }.map { |part, reservations|
+            # Disable partition option for reservations without access
+            data_opts = (res_names - reservations).map { |res| { "data-option-for-csc-slurm-reservation-#{res}".to_sym => false } }
+            # Dynamic form attribute format
+            [part, {"data-option-for-csc-slurm-reservation-none".to_sym => false}, *data_opts]
+          }
+
+        filtered_partitions.map do |partition, project_data|
           # Partition may have extra data included in form.yml, e.g. ["interactive", data-hide-somefield: true]
           partition_data = opts[:select]&.find { |sel| sel.is_a?(Array) && sel.first == partition }&.drop(1)
           [partition, *project_data, *partition_data]
-        end
+        end.concat(
+          res_partitions
+        )
       end
 
       # Submission hash describing how to submit this attribute

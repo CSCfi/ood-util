@@ -37,7 +37,7 @@ module SmartAttributes
 
       # Value should be empty if no reservation can be selected (allows caching of this field)
       def value
-        if select_choices.length > 1
+        if select_choices.length > 1 && opts[:value].to_s != "none"
           opts[:value].to_s
         else
           ""
@@ -46,7 +46,7 @@ module SmartAttributes
 
       # Cache the reservations from Slurm
       def reservations
-        SlurmReservation.reservations
+        @reservations ||= SlurmReservation.reservations
       end
 
       # Form label for this attribute
@@ -84,14 +84,24 @@ module SmartAttributes
           else
             ""
           end
-        ["#{reservation.name}#{inactive_text}", reservation.name, { "data-partition": reservation.partition_name, "disabled": ("true" unless inactive_text.empty?) }, *extra_opts]
+        [
+          "#{reservation.name}#{inactive_text}",
+          reservation.name,
+          {
+            "data-partition": reservation.partition_name,
+            "disabled": ("true" unless inactive_text.empty?),
+          },
+          *extra_opts,
+        ]
       end
 
       # Filter the available reservations based on the allowed partitions for this app
       def select_choices
         cache_expiry = nil #Time.now + 10.minutes
         result = Rails.cache.fetch("slurm_reservations", expires_in: 10.minutes) do
-          [["No reservation", "", { "data-partition": "(null)" }]]
+          # Fetch reservations again
+          @reservations = SlurmReservation.reservations
+          [["No reservation", "none", { "data-partition": "(null)" }]]
             .concat(reservations.map { |res|
               if res.start_time > Time.now && (cache_expiry.nil? || res.start_time < cache_expiry)
                 cache_expiry = res.start_time
