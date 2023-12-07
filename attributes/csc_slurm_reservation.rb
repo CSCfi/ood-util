@@ -82,7 +82,7 @@ module SmartAttributes
           elsif reservation.state == "INACTIVE"
             " (inactive)"
           elsif reservation.maintenance
-            " (maintenance)"
+            " (blocked by maintenance)"
           else
             ""
           end
