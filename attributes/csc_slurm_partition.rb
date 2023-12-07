@@ -71,19 +71,28 @@ module SmartAttributes
               .map { |p| [p, [r.name]] }.to_h # Map to format {"<partition>": ["<reservation>"]}
           }.reduce({}) { |result, res_part| # Reduce to {"<partition>": ["<reservation1>", "<reservation2>"]}
             result.merge(res_part) { |part, old_res_list, new_res_list| old_res_list.concat(new_res_list) }
-          }.map { |part, reservations|
+          }
+
+        # Dropdown options for reservation specific partitions.
+        # Affects node-specific reservations only, since reservations with a single fixed partition can not be changed by user.
+        res_options = res_partitions.map { |part, reservations|
             # Disable partition option for reservations without access
             data_opts = (res_names - reservations).map { |res| { "data-option-for-csc-slurm-reservation-#{res}".to_sym => false } }
             # Dynamic form attribute format
             [part, {"data-option-for-csc-slurm-reservation-none".to_sym => false}, *data_opts]
           }
 
+        # All reservations that have limited partitions available (specific nodes).
+        limited_reservations = res_partitions.values.flatten.uniq
+
         filtered_partitions.map do |partition, project_data|
           # Partition may have extra data included in form.yml, e.g. ["interactive", data-hide-somefield: true]
           partition_data = opts[:select]&.find { |sel| sel.is_a?(Array) && sel.first == partition }&.drop(1)
-          [partition, *project_data, *partition_data]
+          invalid_res = limited_reservations - res_partitions.fetch(partition, [])
+          res_data_opts = invalid_res.map { |res| { "data-option-for-csc-slurm-reservation-#{res}".to_sym => false } }
+          [partition, *project_data, *partition_data, *res_data_opts]
         end.concat(
-          res_partitions
+          res_options
         )
       end
 
