@@ -3,6 +3,8 @@ require "open3"
 module SlurmReservation
 
   Reservation = Struct.new(:name, :nodes, :partition_name, :users, :groups, :flags, :accounts, :state, :start_time, :end_time) do
+    attr_reader :maintenance
+
     def can_use(user, user_groups)
       if !users.empty? && !users.include?(user)
         return false
@@ -19,7 +21,24 @@ module SlurmReservation
     end
 
     def partitions
-      @partitions ||= SlurmReservation.node_partitions(self.nodes)
+      @partitions ||= self.partition_name != "(null)" ? [self.partition_name] : SlurmReservation.node_partitions(self.nodes)
+    end
+
+    # List of nodes in maintenance by this reservation.
+    def maintenance_nodes
+      return [] if self.state != "ACTIVE" || !self.flags.include?("MAINT")
+      return self.expanded_nodes
+    end
+
+    # Set the maintenance status on the reservation.
+    # Checks if the reservation is a node-specific reservation and checks if all of those nodes have maintenance reservations.
+    def set_maintenance(maint_nodes)
+      @maintenance = self.expanded_nodes.all? { |node| maint_nodes.include?(node) }
+    end
+
+    # Expanded list of nodes in reservation, i.e. ["c1200", "c1201"] instead of "c[1200-c1201]"
+    def expanded_nodes
+      @expanded_nodes ||= SlurmReservation.expand_nodes(self.nodes)
     end
   end
 
@@ -45,6 +64,14 @@ module SlurmReservation
       }.flatten.uniq
     rescue => e
       Rails.logger.error("Error getting partitions for nodes #{node_str}: #{e}")
+      []
+    end
+
+    def expand_nodes(node_str)
+      output = run_command("scontrol", "show", "hostname", node_str)
+      output.lines.map(&:strip)
+    rescue => e
+      Rails.logger.error("Error expanding list of nodes (#{node_str}): #{e}")
       []
     end
 
@@ -96,7 +123,10 @@ module SlurmReservation
     def available_reservations(slurm_output, user)
       reservations = parse_reservations(slurm_output)
       groups = user_groups(user)
-      reservations.filter { |res| res.can_use(user, groups) }
+      maintenance_nodes = reservations.map(&:maintenance_nodes).flatten.uniq
+      reservations
+        .filter { |res| res.can_use(user, groups) }
+        .tap { |avail_res| avail_res.each { |res| res.set_maintenance(maintenance_nodes) } }
     end
 
     # Fetches the reservations from slurm, parses them and filters them

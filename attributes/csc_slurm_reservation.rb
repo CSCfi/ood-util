@@ -81,6 +81,8 @@ module SmartAttributes
             " (expired)"
           elsif reservation.state == "INACTIVE"
             " (inactive)"
+          elsif reservation.maintenance
+            " (maintenance)"
           else
             ""
           end
