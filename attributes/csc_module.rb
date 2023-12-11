@@ -84,7 +84,7 @@ module SmartAttributes
         end
       end
 
-      def select_choices
+      def select_choices(*)
         search = opts[:search] || []
         # Cache per form
         @@select_choices ||= Hash.new do |h, key|

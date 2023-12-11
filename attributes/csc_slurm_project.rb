@@ -51,7 +51,7 @@ module SmartAttributes
         end
       end
 
-      def select_choices
+      def select_choices(*)
         @@select_choices ||=
           begin
             get_projects.collect do |p|

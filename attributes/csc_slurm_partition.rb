@@ -58,7 +58,7 @@ module SmartAttributes
         (opts[:label] || "Partition").to_s
       end
 
-      def select_choices
+      def select_choices(*)
         filtered_partitions = get_partitions
 
         res_names = SlurmReservation.reservations.map(&:name)

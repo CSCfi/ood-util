@@ -69,7 +69,7 @@ module SmartAttributes
         end
       end
 
-      def select_choices
+      def select_choices(*)
         paths = opts[:paths] || []
         # Cache per form
         @@select_choices ||= Hash.new do |h, key|
