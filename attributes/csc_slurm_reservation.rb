@@ -98,7 +98,7 @@ module SmartAttributes
       end
 
       # Filter the available reservations based on the allowed partitions for this app
-      def select_choices
+      def select_choices(*)
         [["No reservation", "none", { "data-partition": "(null)" }]]
           .concat(reservations.map { |res|
             select_choice(res)
