@@ -2,7 +2,7 @@
 %define assets_path /var/www/ood/assets/
 
 Name:           ood-util
-Version:        4
+Version:        5
 Release:        1%{?dist}
 Summary:        Open on Demand utils
 
