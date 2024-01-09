@@ -163,7 +163,7 @@ function get_partition() {
   const res_part = res_input.find(":selected").data("partition");
   if (res_input.is(":visible")) {
     // No reservation or invalid reservation => selected partition
-    return res_part == null || res_part == "(null)" ? part : res_part;
+    return res_part == null || res_part == "(null)" ? part : res_part;
   } else {
     return part;
   }
