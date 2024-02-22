@@ -19,7 +19,7 @@ module SmartAttributes
       def initialize(id, opts={})
         @@partitions ||= SlurmProjectPartition.partitions_with_data
         opts[:cacheable] = opts.fetch(:cacheable, true)
-        opts[:help] ||= '<div id="partition_gpu_help" style="display: none;">The selected partition will reserve 1 <span id="partition_gpu_type">GPU</span>.</div>'
+        opts[:help] ||= '<div id="partition_gpu_help" style="display: none;">The selected partition will reserve 1 <span id="partition_gpu_type">GPU</span> (<span id="partition_gpu_name"></span>).</div>'
         super(id, opts)
       end
 
