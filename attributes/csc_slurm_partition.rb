@@ -86,18 +86,11 @@ module SmartAttributes
         limited_reservations = res_partitions.values.flatten.uniq
 
         filtered_partitions.map do |partition, project_data|
-          gpu_types = SlurmLimits.limits.fetch(partition, {}).fetch(:gpu_types, [])
-          gpu_type_data = if gpu_types.empty? then
-                            [ { :"data-hide-csc-gpu-type" => true } ]
-                          else
-                            # For some reason form does not revert to first available option, need to set it.
-                            [ { :"data-set-csc-gpu-type" => gpu_types.first } ]
-                          end
           # Partition may have extra data included in form.yml, e.g. ["interactive", data-hide-somefield: true]
           partition_data = opts[:select]&.find { |sel| sel.is_a?(Array) && sel.first == partition }&.drop(1)
           invalid_res = limited_reservations - res_partitions.fetch(partition, [])
           res_data_opts = invalid_res.map { |res| { "data-option-for-csc-slurm-reservation-#{res}".to_sym => false } }
-          [partition, *project_data, *gpu_type_data, *partition_data, *res_data_opts]
+          [partition, *project_data, *partition_data, *res_data_opts]
         end.concat(
           res_options
         )
