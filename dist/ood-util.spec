@@ -3,7 +3,7 @@
 
 Name:           ood-util
 Version:        6
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Open on Demand utils
 
 BuildArch:      noarch
