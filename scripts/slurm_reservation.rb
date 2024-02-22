@@ -164,7 +164,7 @@ module SlurmReservation
     def max_time(reservation, user_defined_time)
       return user_defined_time if reservation.blank?
 
-      margin = 20.minutes
+      margin = 5.minutes
       res = reservations.find { |r| r.name == reservation }
       end_time = res&.end_time
       # Use user defined time if job is started within last 20 minutes of queueing.
