@@ -68,6 +68,9 @@ require 'active_support'
 
 module SlurmLimits
 
+  MIG_REGEX = /\dg.\d+gb/
+  MIG_ONLY = true
+
   # Structs for storing the results from slurm
   Job = Struct.new(:jobid, :acc, :part, :state, :cpus, :name, :tres) do
     def initialize(*args)
@@ -131,7 +134,7 @@ module SlurmLimits
           elsif res.start_with?("gpu:")
             _, type, amount = res.split(":", 3)
             gres_limits["gres/gpu:#{type}"] = amount.to_i
-            gpu_types.append(type)
+            gpu_types.append(type) if MIG_ONLY && MIG_REGEX.match(type)
           end
         end
       end
