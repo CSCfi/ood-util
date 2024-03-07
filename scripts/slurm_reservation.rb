@@ -32,8 +32,8 @@ module SlurmReservation
 
     # Set the maintenance status on the reservation.
     # Checks if the reservation is a node-specific reservation and checks if all of those nodes have maintenance reservations.
-    def set_maintenance(maint_nodes)
-      @maintenance = self.expanded_nodes.all? { |node| maint_nodes.include?(node) }
+    def set_maintenance(maint_nodes, user, groups)
+      @maintenance = self.expanded_nodes.all? { |node| maint_nodes.include?(node) } unless flags.include?("MAINT") && can_use(user, groups)
     end
 
     # Expanded list of nodes in reservation, i.e. ["c1200", "c1201"] instead of "c[1200-c1201]"
@@ -126,7 +126,7 @@ module SlurmReservation
       maintenance_nodes = reservations.map(&:maintenance_nodes).flatten.uniq
       reservations
         .filter { |res| res.can_use(user, groups) }
-        .tap { |avail_res| avail_res.each { |res| res.set_maintenance(maintenance_nodes) } }
+        .tap { |avail_res| avail_res.each { |res| res.set_maintenance(maintenance_nodes, user, groups) } }
     end
 
     # Fetches the reservations from slurm, parses them and filters them
