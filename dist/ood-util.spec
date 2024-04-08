@@ -2,8 +2,8 @@
 %define assets_path /var/www/ood/assets/
 
 Name:           ood-util
-Version:        6
-Release:        2%{?dist}
+Version:        7
+Release:        1%{?dist}
 Summary:        Open on Demand utils
 
 BuildArch:      noarch
