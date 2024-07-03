@@ -3,7 +3,7 @@
 # attributes:
 #   csc_module:
 #     submit: "course"
-#     search:
+#     options:
 #       - function: "get_jupyter_projappl_modules"
 #       - path: "/appl/modulefiles/courses/"
 #         filter: "Jupyter"
@@ -53,31 +53,36 @@ module SmartAttributes
         (opts[:label] || "Module").to_s
       end
 
-      def parse_search(search_params)
-        # Evaluate each search entry,
-        search_params.map do |search|
-          eval_path = get_search(search)
+      def parse_options(options_params)
+        # Evaluate each options entry,
+        options_params.map do |option|
+          eval_path = get_option(option)
         end.flatten(1)
       end
 
-      # Evaluates the provided search entry
-      def get_search(search_param)
+      # Evaluates the provided options entry
+      def get_option(option_param)
+        if option_param.kind_of?(Array) || option_param.kind_of?(String)
+          [option_param]
         # Execute the function if a function was provided
-        if search_param.has_key?(:function)
+        elsif option_param.has_key?(:function)
           # Keywords for common functions
-          func = @fn_keywords.fetch(search_param[:function].to_sym, search_param[:function])
+          func = @fn_keywords.fetch(option_param[:function].to_sym, option_param[:function])
           if CSCModules.respond_to?(func)
             CSCModules.send(func).map(&:form_definition)
           else
             return []
           end
+        # Spider available modules
+        elsif option_param.has_key?(:spider)
+          CSCModules.spider(option_param[:spider])
           # Search for modules in the path provided
-        elsif search_param.has_key?(:path)
+        elsif option_param.has_key?(:path)
           # Keywords for common paths
-          path = @path_keywords.fetch(search_param[:path].to_sym, search_param[:path])
-          CSCModules.search_path(path, search_param[:filter])
-        elsif search_param.has_key?(:module)
-          return search_param[:module]
+          path = @path_keywords.fetch(option_param[:path].to_sym, option_param[:path])
+          CSCModules.option_path(path, option_param[:filter])
+        elsif option_param.has_key?(:module)
+          return option_param[:module]
         else
           # Invalid format entered in form.yml.erb
           return []
@@ -85,12 +90,12 @@ module SmartAttributes
       end
 
       def select_choices(*)
-        search = opts[:search] || []
+        options = opts[:options] || []
         # Cache per form
         @@select_choices ||= Hash.new do |h, key|
-          h[key] = parse_search(key)
+          h[key] = parse_options(key)
         end
-        @@select_choices[search]
+        @@select_choices[options]
       end
 
       # Submission hash describing how to submit this attribute
