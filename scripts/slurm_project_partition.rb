@@ -53,12 +53,11 @@ module SlurmProjectPartition
     # e.g. [{:name => "project_2001659", :description => "CSC user's maintenance"}, {:name => "ood_installation", :description => "Puhti Open onDemand Environment Management"}]
     def get_projects_full(slurm_output, csc_projects_output)
       parsed = parse_slurm_output(slurm_output)
-      project_descriptions = parse_csc_projects(csc_projects_output)
       # get only the first part(project) of the array, filter unique entries
       parsed.map do | p_and_p |
         project = p_and_p[0]
         # Description will be project name if not defined
-        {:name => project, :description => project_descriptions.fetch(project, project) }
+        {:name => project, :description => project_description(project) }
       end.uniq
     end
 
@@ -107,6 +106,18 @@ module SlurmProjectPartition
 
     def partitions_with_data
       @partitions_with_data ||= get_partitions_with_data(query_slurm)
+    end
+
+    # Project titles for LUMI
+    def project_description(project)
+      @@project_descriptions ||= Hash.new do |h, key|
+        path = File.join("/var/lib/project_info/users", key, "#{key}.json")
+        info = JSON.parse(File.read(path))
+        h[key] = info.fetch("title", key)
+      rescue => e
+        h[key] = key
+      end
+      @@project_descriptions[project]
     end
 
     # Returns a hash where the keys are the project name and the description is the value
