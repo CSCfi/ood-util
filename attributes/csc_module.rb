@@ -75,7 +75,12 @@ module SmartAttributes
           end
         # Spider available modules
         elsif option_param.has_key?(:spider)
-          CSCModules.spider(option_param[:spider])
+          # Accept either only the name of a module (String), or name and data- parameters
+          param = option_param[:spider]
+          name = param.kind_of?(String) ? param : param[:name]
+          versions = CSCModules.all_versions(name)
+          data = param.kind_of?(String) ? {} : param.fetch(:data, {})
+          versions.map { |v| ["#{v[:name]}#{" (default)" if v[:default]}", v[:name], *data]}
           # Search for modules in the path provided
         elsif option_param.has_key?(:path)
           # Keywords for common paths
