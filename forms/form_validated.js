@@ -210,12 +210,24 @@ function update_gpu_type() {
   const gpu_help = $("#partition_gpu_help");
   const gpu_name_help = $("#partition_gpu_name");
   const gpu_type_help = $("#partition_gpu_type");
+  const extra_docs = $("#partition_gpu_docs");
   if (limits.gpu_types && limits.gpu_types.length > 0) {
     const gpu_name = limits.gpu_types[0].toUpperCase();
-    const gpu_type = gpu_name === "MI250" ? "GCD" : "GPU";
+    const mig = /_\d\G\.\dGB/.test(gpu_name);
+    const gpu_type = gpu_name === "MI250" ? "GCD" : (mig ? "small GPU" : "GPU");
     gpu_name_help.text(gpu_name);
     gpu_type_help.text(gpu_type);
 
+    if (mig) {
+      const new_docs = $(document.createElement("div"))
+        .attr("id", "partition_gpu_docs")
+        .append(document.createTextNode("Note that the small GPU has less compute and memory capacity than a full GPU. For more details, check the "))
+        .append($("<a></a>").attr("href", "https://docs.csc.fi/computing/running/batch-job-partitions/").text("CSC user guides"))
+        .append(document.createTextNode("."));
+      extra_docs.replaceWith(new_docs);
+    } else {
+      extra_docs.empty();
+    }
     gpu_help.show();
   } else {
     gpu_help.hide();
