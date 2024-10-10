@@ -210,15 +210,17 @@ function update_gpu_type() {
   const gpu_help = $("#partition_gpu_help");
   const gpu_name_help = $("#partition_gpu_name");
   const gpu_type_help = $("#partition_gpu_type");
+  const n_gpu_field = $(`#${BC_PREFIX}_csc_gpu`).closest(".form-group");
   if (limits.gpu_types && limits.gpu_types.length > 0) {
     const gpu_name = limits.gpu_types[0].toUpperCase();
     const gpu_type = gpu_name === "MI250" ? "GCD" : "GPU";
     gpu_name_help.text(gpu_name);
     gpu_type_help.text(gpu_type);
-
-    gpu_help.show();
+    $("label[for=batch_connect_session_context_csc_gpu").text(`Number of GPUs (${gpu_name}${gpu_type === "GCD" ? " GCDs" : ""})`);
+    n_gpu_field.show();
   } else {
-    gpu_help.hide();
+    $("label[for=batch_connect_session_context_csc_gpu").text(`Number of GPUs`);
+    n_gpu_field.hide();
   }
 }
 
