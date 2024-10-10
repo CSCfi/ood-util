@@ -239,13 +239,17 @@ function get_custom_limits(el) {
 function update_input(el) {
   // Use data-min and data-max to determine which slurm limit value to use
   const min = el.data("min");
-  const max = el.data("max");
+  let max = el.data("max");
 
   const [customMin, customMax] = get_custom_limits(el);
 
   const parse = element_parse_function(el);
 
   const limits = get_current_limits();
+
+  if (max === "gres/gpu" && limits["gpu_types"] != null && limits["gpu_types"].length > 0) {
+    max = `gres/gpu:${limits["gpu_types"][0]}`;
+  }
 
   if (min != null || customMin != null) {
     let [limit, used, type] = get_limit(limits, min);

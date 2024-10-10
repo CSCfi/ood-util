@@ -30,7 +30,7 @@ module SmartAttributes
       # @param fmt [String, nil] formatting of form label
       # @return [String] form label
       def label(fmt: nil)
-        (opts[:label] || opts[:type].nil? ? "GPUs" : "GPUs (#{opts[:type].capitalize})").to_s
+        (opts[:label] || opts[:type].nil? ? "Number of GPUs" : "Number of GPUs (#{opts[:type].capitalize})").to_s
       end
 
       def value
