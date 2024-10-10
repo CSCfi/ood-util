@@ -34,7 +34,7 @@ module SmartAttributes
       end
 
       def value
-        (opts[:value] || "0").to_s
+        (opts[:value] || "1").to_s
       end
 
       # Submission hash describing how to submit this attribute
