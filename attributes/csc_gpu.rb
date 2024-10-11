@@ -15,7 +15,7 @@ module SmartAttributes
       def initialize(id, opts = {})
         # Validate field using the gres/gpu:v100 in csc_slurm_limits
         opts[:data] = {:max => opts[:type].nil? ? "gres/gpu" : "gres/gpu:#{opts[:type]}"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
-        opts[:min] ||= 0
+        opts[:min] = opts[:min].nil? ? 1 : opts[:min]
         opts[:cacheable] = opts.fetch(:cacheable, false)
         super(id, opts)
       end
