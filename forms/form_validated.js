@@ -217,10 +217,10 @@ function update_gpu_type() {
     gpu_name_help.text(gpu_name);
     gpu_type_help.text(gpu_type);
     $("label[for=batch_connect_session_context_csc_gpu").text(`Number of GPUs (${gpu_name}${gpu_type === "GCD" ? " GCDs" : ""})`);
-    n_gpu_field.show();
+    n_gpu_field.toggleClass("d-none", false);
   } else {
     $("label[for=batch_connect_session_context_csc_gpu").text(`Number of GPUs`);
-    n_gpu_field.hide();
+    n_gpu_field.toggleClass("d-none", true);
   }
 }
 
@@ -243,7 +243,7 @@ function update_input(el) {
   const min = el.data("min");
   let max = el.data("max");
 
-  const [customMin, customMax] = get_custom_limits(el);
+  let [customMin, customMax] = get_custom_limits(el);
 
   const parse = element_parse_function(el);
 
@@ -251,6 +251,7 @@ function update_input(el) {
 
   if (max === "gres/gpu" && limits["gpu_types"] != null && limits["gpu_types"].length > 0) {
     max = `gres/gpu:${limits["gpu_types"][0]}`;
+    customMin = "1";
   }
 
   if (min != null || customMin != null) {
@@ -447,6 +448,8 @@ function validate_input(el) {
   }
 
   if (el.is(":hidden")) {
+    setValidity(el, "");
+    el[0].reportValidity();
     return;
   }
 
