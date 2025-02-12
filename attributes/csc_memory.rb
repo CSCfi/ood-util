@@ -31,7 +31,7 @@ module SmartAttributes
       # @param fmt [String, nil] formatting of form label
       # @return [String] form label
       def label(fmt: nil)
-        (opts[:label] || "Memory (GB)").to_s
+        (opts[:label] || "Memory (GiB)").to_s
       end
 
       def value
