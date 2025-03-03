@@ -22,6 +22,7 @@ const BC_PREFIX = "batch_connect_session_context";
       loaded = true;
       setup_form();
       setup_reset_cache_button();
+      hide_settings_form_extras();
     }
   }
   document.addEventListener("DOMContentLoaded", init);
@@ -570,3 +571,10 @@ function deleteCache(cache_file) {
   });
 }
 
+// Hides unnecessary elements from the saved settings page
+function hide_settings_form_extras() {
+  const settings_to_hide = $("#settings-card > .card-body > p > strong")
+    .filter(function(_) { return $(this).text().startsWith("Csc ") })
+    .closest("p");
+  settings_to_hide.hide();
+}
