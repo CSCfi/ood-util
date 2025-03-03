@@ -547,7 +547,7 @@ function setup_reset_cache_button() {
   const reset_button = document.createElement("button");
   reset_button.className = "btn btn-secondary btn-block";
   reset_button.appendChild(document.createTextNode("Reset to default settings"));
-  form.append(reset_button);
+  form.find("div.d-grid.gap-2").append(reset_button);
   $(reset_button).click(function(e) {
     e.preventDefault();
     const cache_file = reset_cache_field.data("app");
