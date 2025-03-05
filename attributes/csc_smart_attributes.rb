@@ -1,5 +1,4 @@
 require_relative './csc_cores'
-require_relative './csc_extra_desc'
 require_relative './csc_gpu'
 require_relative './csc_memory'
 require_relative './csc_nvme'
