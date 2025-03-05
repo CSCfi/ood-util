@@ -6,6 +6,9 @@ module SlurmReservation
     attr_reader :maintenance
 
     def can_use(user, user_groups)
+      if partition_name.include?("-no-ood")
+        return false
+      end
       if !users.empty? && !users.include?(user)
         return false
       end
