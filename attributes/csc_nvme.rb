@@ -16,6 +16,7 @@ module SmartAttributes
         opts[:data] = {:max => "gres/nvme"}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         opts[:min] ||= 0
         opts[:cacheable] = opts.fetch(:cacheable, false)
+        opts[:help] ||= 'You can reserve a local SSD disk area for supporting I/O intensive computing tasks. Check [Docs CSC](https://docs.csc.fi/computing/disk/#compute-nodes-with-local-ssd-nvme-disks) to see whether your workload may benefit from the local disks, and how to utilize the disk area.'
         super(id, opts)
       end
 
