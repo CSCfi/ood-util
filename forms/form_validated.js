@@ -290,15 +290,15 @@ function update_input(el) {
     }
     if (limit === 0 && used === 0) {
       el.val(0);
-      el.closest(".form-group").children().each(function() {$(this).hide()});
+      el.closest(".mb-3").children().each(function() {$(this).hide()});
     } else {
-      el.closest(".form-group").children().each(function() {$(this).show()});
+      el.closest(".mb-3").children().each(function() {$(this).show()});
     }
   }
 
   // Hide the csc_memory text element if max_mem_per_cpu is defined and add update memory amount in CPU help text.
   if (el.attr("id").endsWith("csc_memory")) {
-    const group = el.closest(".form-group");
+    const group = el.closest(".mb-3");
     const max_mem_cpu_help = $("#max_mem_per_cpu_help");
 
     const max_mem_per_cpu = limits["max_mem_per_cpu"];
