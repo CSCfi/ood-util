@@ -512,7 +512,7 @@ function show_confirm_modal(title, text, callback, confirmText = "OK", cancelTex
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">${title}</h5>
-        <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
         </button>
       </div>
       <div class="modal-body">
@@ -520,7 +520,7 @@ function show_confirm_modal(title, text, callback, confirmText = "OK", cancelTex
       </div>
       <div class="modal-footer">
         <button type="button" id="confirmButton" class="btn btn-primary">${confirmText}</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>`
