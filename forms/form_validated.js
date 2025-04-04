@@ -182,18 +182,29 @@ function handle_submit(ev) {
 
   validate_form();
   const valid = !ev.currentTarget.checkValidity || ev.currentTarget.checkValidity();
+  let action = get_form().attr("action");
+  if (ev.originalEvent && ev.originalEvent.submitter) {
+    const submit_btn = $(ev.originalEvent.submitter);
+    const form_action = submit_btn.attr("formaction");
+    if (form_action) {
+      action = form_action;
+    }
+  }
   if (valid) {
-    submit_form();
+    submit_form(action);
   } else {
-    show_confirm_modal("Form invalid", "The form contains invalid parameters. Are you sure you want to launch the application?", submit_form, "Launch");
+    show_confirm_modal("Form invalid", "The form contains invalid parameters. Are you sure you want to launch the application?", () => submit_form(action), "Launch");
     get_form()[0].reportValidity();
   }
 }
 
 // Actually submit the form bypassing the jQuery handler
-function submit_form() {
+function submit_form(action) {
   const form = get_form();
   form.find(':submit').prop('disabled', true);
+  if (action) {
+    form.attr("action", action);
+  }
   form[0].submit();
 }
 
