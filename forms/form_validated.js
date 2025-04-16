@@ -222,7 +222,7 @@ function update_gpu_type() {
   const gpu_help = $("#partition_gpu_help");
   const gpu_name_help = $("#partition_gpu_name");
   const gpu_type_help = $("#partition_gpu_type");
-  const n_gpu_field = $(`#${BC_PREFIX}_csc_gpu`).closest(".form-group");
+  const n_gpu_field = $(`#${BC_PREFIX}_csc_gpu`).closest(".mb-3");
   if (limits.gpu_types && limits.gpu_types.length > 0) {
     const gpu_name = limits.gpu_types[0].toUpperCase();
     const gpu_type = gpu_name === "MI250" ? "GCD" : "GPU";
