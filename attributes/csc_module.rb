@@ -78,9 +78,14 @@ module SmartAttributes
           # Accept either only the name of a module (String), or name and data- parameters
           param = option_param[:spider]
           name = param.kind_of?(String) ? param : param[:name]
-          versions = CSCModules.all_versions(name)
+          versions = CSCModules.all_versions(name, param[:module_json_file])
           data = param.kind_of?(String) ? {} : param.fetch(:data, {})
-          versions.map { |v| ["#{v[:name]}#{" (default)" if v[:default]}", v[:name], *data]}
+          mods = versions.map do |v|
+            partitions_data = v[:partitions]&.map do |part|
+              {"data-exclusive-option-for-csc-slurm-partition-#{part}".to_sym => true }
+            end || []
+            ["#{v[:name]}#{" (default)" if v[:default]}", v[:name], *data, *partitions_data]
+          end
           # Search for modules in the path provided
         elsif option_param.has_key?(:path)
           # Keywords for common paths
