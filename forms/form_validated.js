@@ -551,7 +551,7 @@ function setup_reset_cache_button() {
   if (reset_cache_field.length == 0) {
     return;
   }
-  const form = reset_cache_field.parent();
+  const form = reset_cache_field.closest("form");
   const reset_button = document.createElement("button");
   reset_button.className = "btn btn-secondary btn-block";
   reset_button.appendChild(document.createTextNode("Reset to default settings"));
