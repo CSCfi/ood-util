@@ -1,4 +1,4 @@
 include:
-  - project: 'compen/open-ondemand/ood-ci-account'
+  - project: 'compen/open-ondemand/ood-ci'
     ref: main
     file: 'ci-templates/build-and-upload.yml'
