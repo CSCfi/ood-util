@@ -212,6 +212,7 @@ function update_min_max(validate = true) {
   const inputs = get_inputs();
   inputs.each((i, inp) => update_input($(inp)));
   update_gpu_type();
+  update_partition_state_warning();
   if (validate) {
     validate_form();
   }
@@ -233,6 +234,55 @@ function update_gpu_type() {
   } else {
     $("label[for=batch_connect_session_context_csc_gpu").text(`Number of GPUs`);
     n_gpu_field.toggleClass("d-none", true);
+  }
+}
+
+function get_partition_states() {
+  return $(`#${BC_PREFIX}_csc_slurm_limits`).data("partition-states") || {};
+}
+
+function update_partition_state_warning() {
+  $("#partition_state_warning").remove();
+  try {
+    show_partition_state_warning();
+  } catch (e) {
+    console.error("Error checking partition state:", e);
+  }
+}
+
+function show_partition_state_warning() {
+  const res_input = get_reservation_input();
+  const reservation = res_input.val();
+  if (res_input.is(":visible") && reservation && reservation !== "none") {
+    return;
+  }
+
+  const partition = get_partition();
+  const state = get_partition_states()[partition];
+  if (state == null || state["available"] !== false) {
+    return;
+  }
+
+  const reason = state["avail"] && state["avail"] !== "up"
+    ? `The ${partition} partition is currently in the ${String(state["avail"]).toUpperCase()} state.`
+    : `All nodes in the ${partition} partition are currently unavailable (e.g. down or in maintenance).`;
+  const warning = $(document.createElement("span"))
+    .attr("id", "partition_state_warning")
+    .attr("role", "alert")
+    .addClass("text-danger d-block")
+    .text(`${reason} The selected partition may not be available and the job might not start until it becomes available again.`);
+
+  const target = get_partition_input().is(":visible") ? get_partition_input() : get_project_input();
+  const help_text = target.siblings("small.form-text");
+  if (help_text.length > 0) {
+    help_text.first().append(warning);
+  } else if (target.is(":visible")) {
+    target.after($(document.createElement("small"))
+      .attr("id", "partition_state_warning")
+      .addClass("form-text")
+      .append(warning.removeAttr("id")));
+  } else {
+    get_form().prepend(warning);
   }
 }
 

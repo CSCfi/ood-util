@@ -222,6 +222,7 @@ attributes:
       # partition: "interactive"
       nofetchlimits: false # Set to true to not use limits from Slurm, i.e define all limits ourselves like the example below
       nosubmitscount: false # Set to true to not check amount of queued jobs, e.g. max 2 jobs for interactive partition
+      nopartitionstate: false # Set to true to not warn when the selected partition is unavailable (e.g. all nodes down)
       limits:
         interactive:
           cpu: 2 # Override the limits from Slurm (if slurm_limits.rb returns an incorrect value)

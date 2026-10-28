@@ -3,6 +3,11 @@ begin
 rescue LoadError => e
   Rails.logger.error("Error loading slurm_limits.rb: #{e}")
 end
+begin
+  require_relative '../scripts/slurm_partition_state'
+rescue LoadError => e
+  Rails.logger.error("Error loading slurm_partition_state.rb: #{e}")
+end
 module SmartAttributes
   class AttributeFactory
     def self.build_csc_slurm_limits(opts = {})
@@ -23,12 +28,15 @@ module SmartAttributes
             assoc_limits = SlurmLimits.assoc_limits
             submits = SlurmLimits.running
           end
+          unless opts[:nopartitionstate]
+            partition_states = SlurmPartitionState.states
+          end
         rescue Exception => e
           Rails.logger.error("Error getting limits from Slurm: #{e}\n#{e.backtrace.join("\n\t")}")
           error = e
         end
         # Allow devs to override the limits from slurm
-        opts[:data] = {:limits => limits, :assoc_limits => assoc_limits, :submits => submits, :error => error}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
+        opts[:data] = {:limits => limits, :assoc_limits => assoc_limits, :submits => submits, :partition_states => partition_states, :error => error}.deep_symbolize_keys.deep_merge(opts.fetch(:data, {}))
         super(id, opts)
       end
 

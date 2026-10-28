@@ -88,6 +88,12 @@ sacctmgr --noheader --parsable2 show assoc format=Partition,Account,MaxJobs,MaxS
 # get the amount of submissions the user has for each partition and project
 squeue --noheader --Format "JobID:|,Account:|,Partition:|,StateCompact:|,MinCpus:|,tres-alloc:|" --user $USER
 ```
+```
+# Partition availability (slurm_partition_state.rb)
+
+# partition state (up/down/drain/inact), node state and node count, one line per partition and node state
+sinfo --noheader --Format "PartitionName:|,Available:|,StateLong:|,Nodes:"
+```
 
 #### Resource limits
 The resource limits are retrieved from SlurmLimits as `limits = SlurmLimits.limits`.
@@ -183,12 +189,41 @@ Example output, submits:
 }
 ```
 
+### Partition availability (`slurm_partition_state.rb`)
+`SlurmPartitionState.states` returns the availability of each partition, used for warning the user if the selected partition is unlikely to run jobs.
+Partition and node states are queried using sinfo and cached for 5 minutes.
+
+A partition is considered unavailable (`available: false`) if the partition is not `up` (e.g. `down`, `drain` or `inact`), or if none of its nodes are usable.
+
+A node is usable if it can run jobs now, once its current jobs finish, or once Slurm has powered it up or rebooted it:
+- Ready or running jobs: `idle`, `mixed`, `allocated`, `completing`, `planned`, `blocked`
+- Power saving: `cloud`, `power_down`, `powering_down`, `powered_down`, `powering_up`
+- Rebooting: `boot`, `reboot_issued`, `reboot_requested`
+- In a non-maintenance reservation: `resv`/`reserved`
+
+A node is not usable if it has one of the following states:
+- Down or failing: `down`, `fail`/`failing`, `inval`, `unknown`
+- Drained by admins: `drain`/`drained`/`draining`
+- Not yet in service: `future`
+- Maintenance: `maint`
+
+or one of the following suffixes, regardless of the state:
+- `$`: in a maintenance reservation
+- `*`: not responding
+
+```
+{
+  "small": {"name": "small", "avail": "up", "usable": 0, "total": 8, "states": {"drain$": 3, "maint": 5}, "available": false},
+  "large": {"name": "large", "avail": "up", "usable": 100, "total": 102, "states": {"allocated": 90, "mixed": 10, "down*": 2}, "available": true}
+}
+```
+
 ### csc_slurm_limits.rb
 `csc_slurm_limits.rb` is a smart attribute for OOD.
 It is used to generate a hidden input field with JSON data and is used for passing the data from the backend to the frontend.
 See [Smart attributes README](https://gitlab.ci.csc.fi/compen/hpc-environment/ood-util/-/blob/master/attributes/README.md) for usage instructions.
-The attributes `nofetchlimits`, `nosubmitscount` can be used for disabling fetching of limits from SlurmLimits.
-On the `data` attribute `limits`, `assoc_limits` and `submits` can be set to override the limits from SlurmLimits.
+The attributes `nofetchlimits`, `nosubmitscount` can be used for disabling fetching of limits from SlurmLimits, and `nopartitionstate` for disabling fetching of partition states from SlurmPartitionState.
+On the `data` attribute `limits`, `assoc_limits`, `submits` and `partition_states` can be set to override the values from Slurm.
 If fixed partition is used for the form the `partition` attribute can be set on `csc_slurm_limits` `data` attribute.
 
 ## Frontend
@@ -207,6 +242,11 @@ When the project or partition in the form are changed all form fields are update
 When any of the input elements in the form are changed all form elements will be validated.
 If an element has an invalid value, which is lower or higher than the limit or invalid format, an error will be shown by setting a custom error message.
 Which value is used from the Slurm limits object can be set by setting `data-max` and `data-min` on the form fields. That can be done by setting `min` and `max` in the `data` attribute on the form field.
+
+### Partition availability
+If the selected partition is unavailable, a warning is shown as red text in the help text of the partition dropdown (or the project dropdown if the partition is fixed) stating that the partition may not be available.
+This is only a warning and does not make the form invalid, as jobs can still be queued and will start once the partition becomes available.
+No warning is shown when a reservation is selected, as the reservation's nodes may be available even if the rest of the partition is not.
 
 ### Submission limits
 The max submission limit is handled by checking the submission limits every time the project or partition changes.
